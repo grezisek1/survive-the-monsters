@@ -1,42 +1,45 @@
 import * as Phaser from "./node_modules/phaser/dist/phaser.esm.js";
 
+const GRAVITY = 200;
+const SCENE_WIDTH = 1920;
+const SCENE_HEIGHT = 1080;
+const SPRITE_SIZE = 128;
+
+const actors = {};
+
 class GameScene extends Phaser.Scene {
     preload () {
-        this.load.setBaseURL("https://labs.phaser.io");
-
-        this.load.image("sky", "assets/skies/space3.png");
-        this.load.image("logo", "assets/sprites/phaser3-logo.png");
-        this.load.image("red", "assets/particles/red.png");
+        this.load.image("player", "sprites/players/mvp_player/idle_0.png");
+        this.load.image("monster_0", "sprites/monsters/mvp_monster_0/idle_0.png");
+        this.load.image("monster_1", "sprites/monsters/mvp_monster_1/idle_0.png");
     }
-
     create () {
-        this.add.image(400, 300, "sky");
+        actors.player = this.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, "player");
+        actors.player.setVelocity(100, 0);
+        actors.player.setBounce(1, 1);
+        actors.player.setCollideWorldBounds(true);
 
-        const particles = this.add.particles(0, 0, "red", {
-            speed: 100,
-            scale: { start: 1, end: 0 },
-            blendMode: "ADD"
-        });
-
-        const logo = this.physics.add.image(400, 100, "logo");
-
-        logo.setVelocity(100, 200);
-        logo.setBounce(1, 1);
-        logo.setCollideWorldBounds(true);
-
-        particles.startFollow(logo);
+        actors.monster_0 = this.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, "monster_0");
+        actors.monster_0.setVelocity(-150, 10);
+        actors.monster_0.setBounce(1, 1);
+        actors.monster_0.setCollideWorldBounds(true);
+        
+        actors.monster_1 = this.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, "monster_1");
+        actors.monster_1.setVelocity(-200, 0);
+        actors.monster_1.setBounce(1, 1);
+        actors.monster_1.setCollideWorldBounds(true);
     }
 }
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: SCENE_WIDTH,
+    height: SCENE_HEIGHT,
     scene: GameScene,
     physics: {
         default: "arcade",
         arcade: {
-            gravity: { y: 200 }
+            gravity: { y: GRAVITY }
         }
     }
 });
