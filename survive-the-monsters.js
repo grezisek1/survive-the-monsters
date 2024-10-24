@@ -41,6 +41,7 @@ scenes.main.preload = function() {
 };
 scenes.main.create = function() {
     actors.player = this.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, "player");
+    actors.player.setCircle(SPRITE_SIZE / 2, 0, 0);
     actors.player.setPosition(sceneCenterX, sceneCenterY);
 
     this.physics.world.on("worldstep", physicsLoop);
@@ -147,6 +148,8 @@ function spawnEnemy(x, y, type) {
     enemiesX[enemyId] = x;
     enemiesY[enemyId] = y;
     actors.enemies[enemyId] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `monster_${type}`);
+    actors.enemies[enemyId].setCircle(SPRITE_SIZE / 2, 0, 0);
+    scenes.main.physics.add.collider(actors.player, actors.enemies[enemyId], endGame);
     actors.enemies[enemyId].setPosition(x, y);
 }
 function despawnEnemy(enemyId) {
@@ -154,7 +157,18 @@ function despawnEnemy(enemyId) {
     enemiesX[enemyId] = NaN;
     enemiesY[enemyId] = NaN;
     actors.enemies[enemyId].destroy();
-    // enemiesLargestId
+    actors.enemies[enemyId] = undefined;
+
+    if (enemyId != enemiesLargestId) {
+        return;
+    }
+    for (let id = enemiesLargestId - 1; id >= 0; id--) {
+        if (!enemiesState[id]) {
+            continue;
+        }
+        enemiesLargestId = id;
+        break;
+    }
 }
 
 const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT);
@@ -164,3 +178,16 @@ setInterval(() => {
     const y = playerY - spawnRadiusHalf + spawnRadius * Math.random();
     spawnEnemy(x, y, 0);
 }, 2000);
+
+function endGame() {
+    alert("game over, restart?");
+    for (let id = 0; id <= enemiesLargestId; id++) {
+        actors.enemies[id].destroy();
+    }
+    actors.enemies.fill(undefined);
+    
+    enemiesLargestId = -1;
+    enemiesState.fill(0);
+    enemiesX.fill(NaN);
+    enemiesY.fill(NaN);
+}
