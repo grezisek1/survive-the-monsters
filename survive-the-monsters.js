@@ -1,23 +1,31 @@
 import * as Phaser from "./node_modules/phaser/dist/phaser.esm.js";
 
 const movementConfig = {
-    speed: 300,
+    playerSpeed: 300,
+    enemiesSpeed: 200,
 };
 
 const GRAVITY = 0;
 const SCENE_WIDTH = 1920;
 const SCENE_HEIGHT = 1080;
 const SPRITE_SIZE = 128;
-const ENEMIES_COUNT = 2;
+const ENEMIES_COUNT_MAX = 2**8;
 
 const actors = {
-    enemies: new Array(ENEMIES_COUNT),
+    enemies: new Array(ENEMIES_COUNT_MAX),
 };
 
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
-const enemiesX = new Float64Array(ENEMIES_COUNT);
-const enemiesY = new Float64Array(ENEMIES_COUNT);
+
+const enemiesState = new Uint8Array(ENEMIES_COUNT_MAX);
+const enemiesType = new Uint8Array(ENEMIES_COUNT_MAX);
+const enemiesX = new Float64Array(ENEMIES_COUNT_MAX);
+const enemiesY = new Float64Array(ENEMIES_COUNT_MAX);
+let enemiesLargestId = -1;
+enemiesX.fill(NaN);
+enemiesY.fill(NaN);
+
 const input = [0, 0];
 let playerX = 0;
 let playerY = 0;
@@ -33,10 +41,6 @@ scenes.main.preload = function() {
 };
 scenes.main.create = function() {
     actors.player = this.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, "player");
-    for (let enemyId = 0; enemyId < ENEMIES_COUNT; enemyId++) {
-        actors.enemies[enemyId] = this.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `monster_${enemyId}`);
-    }
-    
     actors.player.setPosition(sceneCenterX, sceneCenterY);
 
     this.physics.world.on("worldstep", physicsLoop);
@@ -64,9 +68,11 @@ const game = new Phaser.Game({
 function physicsLoop(dt) {
     updateInput();
     normalizeInput();
-    applyMovement(dt);
+    applyPlayerMovement(dt);
+    applyEnemiesMovement(dt);
     updatePositions();
 }
+
 function updateInput() {
     input[0] = Number(inputKeys.right.isDown) - Number(inputKeys.left.isDown);
     input[1] = Number(inputKeys.down.isDown) - Number(inputKeys.up.isDown);
@@ -80,15 +86,81 @@ function normalizeInput() {
     input[0] /= m;
     input[1] /= m;
 }
-function applyMovement(dt) {
-    const speed = movementConfig.speed * dt;
+
+function applyPlayerMovement(dt) {
+    const speed = movementConfig.playerSpeed * dt;
     playerX += input[0] * speed;
     playerY += input[1] * speed;
 }
+function applyEnemiesMovement(dt) {
+    const speed = movementConfig.enemiesSpeed * dt;
+    
+    for (let enemyId = 0; enemyId <= enemiesLargestId; enemyId++) {
+        if (!enemiesState[enemyId]) {
+            continue;
+        }
+        const manDistX = playerX - enemiesX[enemyId];
+        const manDistY = playerY - enemiesY[enemyId];
+        const eucDistSq = manDistX**2 + manDistY**2;
+
+        let eucDist;
+        let eigX;
+        let eigY;
+        if (eucDistSq < 1) {
+            eucDist = 1;
+            eigX = manDistX;
+            eigY = manDistY;
+        } else {
+            eucDist = eucDistSq**0.5;
+            eigX = manDistX / eucDist;
+            eigY = manDistY / eucDist;
+        }
+
+        enemiesX[enemyId] += eigX * speed;
+        enemiesY[enemyId] += eigY * speed;
+    }
+}
+
 function updatePositions() {
-    for (let enemyId = 0; enemyId < ENEMIES_COUNT; enemyId++) {
+    for (let enemyId = 0; enemyId <= enemiesLargestId; enemyId++) {
+        if (!enemiesState[enemyId]) {
+            continue;
+        }
         const x = sceneCenterX - playerX + enemiesX[enemyId];
         const y = sceneCenterY - playerY + enemiesY[enemyId];
         actors.enemies[enemyId].setPosition(x, y);
     }
 }
+
+function spawnEnemy(x, y, type) {
+    let enemyId = enemiesLargestId + 1;
+    for (let id = 0; id < enemyId; id++) {
+        if (!enemiesState[id]) {
+            enemyId = id;
+            break;
+        }
+    }
+    enemiesLargestId = Math.max(enemiesLargestId, enemyId);
+
+    enemiesState[enemyId] = 1;
+    enemiesType[enemyId] = type;
+    enemiesX[enemyId] = x;
+    enemiesY[enemyId] = y;
+    actors.enemies[enemyId] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `monster_${type}`);
+    actors.enemies[enemyId].setPosition(x, y);
+}
+function despawnEnemy(enemyId) {
+    enemiesState[enemyId] = 0;
+    enemiesX[enemyId] = NaN;
+    enemiesY[enemyId] = NaN;
+    actors.enemies[enemyId].destroy();
+    // enemiesLargestId
+}
+
+const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT);
+const spawnRadiusHalf = spawnRadius / 2;
+setInterval(() => {
+    const x = playerX - spawnRadiusHalf + spawnRadius * Math.random();
+    const y = playerY - spawnRadiusHalf + spawnRadius * Math.random();
+    spawnEnemy(x, y, 0);
+}, 2000);
