@@ -1,5 +1,7 @@
 import * as Phaser from "./node_modules/phaser/dist/phaser.esm.js";
 import Soa from "./soa.js";
+import EnemySpawner from "./enemy-spawner.js";
+import BulletSpawner from "./bullet-spawner.js";
 
 const movementConfig = {
     playerSpeed: 5,
@@ -7,6 +9,21 @@ const movementConfig = {
     bulletsInitialVelocity: 1200,
     velocityDamp: 0.99,
 };
+const enemyTypes = [
+    {
+        maxHealth: 2,
+        size: 128,
+    },
+    {
+        maxHealth: 2,
+        size: 128,
+    }
+];
+const bulletTypes = [
+    {
+        size: 128,
+    },
+];
 const enemyHealth = 2;
 
 const PHYSICS_FPS = 60;
@@ -67,6 +84,9 @@ scenes.main.create = function() {
         right: "D",
     });
 };
+
+const enemySpawner = new EnemySpawner(actors, enemies, enemyTypes, scenes.main, loseGame);
+const bulletSpawner = new BulletSpawner(actors, bullets, bulletTypes, scenes.main, hitEnemy);
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -155,80 +175,20 @@ function updatePosition(id, { x, y }, actorGroup) {
     );
 }
 
-function spawnEnemy(x, y, type) {
-    const result = enemies.add({
-        state: enemyHealth,
-        type,
-        x,
-        y,
-    });
-    if (result.justReachedFull) {
-        winGame();
-        return;
-    }
-    actors.enemies[result.id] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `monster_${type}`);
-    actors.enemies[result.id].setName(result.id);
-    actors.enemies[result.id].setCircle(SPRITE_SIZE / 2, 0, 0);
-    scenes.main.physics.add.collider(actors.player, actors.enemies[result.id], loseGame);
-    actors.enemies[result.id].setPosition(x, y);
-}
-function despawnEnemy(enemyId) {
-    const result = enemies.remove(enemyId);
-    if (!result.removed) {
-        return;
-    }
-    actors.enemies[enemyId].destroy();
-    actors.enemies[enemyId] = undefined;
-}
-function spawnBullet(x, y, type, initialVelocity) {
-    const result = bullets.add({
-        state: 1,
-        type,
-        x,
-        y,
-        vx: initialVelocity[0],
-        vy: initialVelocity[1],
-    });
-    if (result.id == -1) {
-        return;
-    }
-    
-    if (result.justReachedFull) {
-        alert("out of ammo. sorry");
-        return;
-    }
-
-    actors.bullets[result.id] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `bullet_${type}`);
-    actors.bullets[result.id].setName(result.id);
-    actors.bullets[result.id].setCircle(SPRITE_SIZE / 2, 0, 0);
-    scenes.main.physics.add.collider(actors.bullets[result.id], actors.enemies, hitEnemy);
-    actors.bullets[result.id].setPosition(x, y);
-    actors.bullets[result.id].setFriction(0);
-}
-function despawnBullet(bulletId) {
-    const result = bullets.remove(bulletId);
-    if (!result.removed) {
-        return;
-    }
-    actors.bullets[bulletId].destroy();
-    actors.bullets[bulletId] = undefined;
-}
-
 function hitEnemy({ name: bulletId }, { name: enemyId }) {
-    despawnBullet(bulletId);
+    bulletSpawner.despawn(bulletId);
     if (enemies.data.state[enemyId] == 1) {
-        despawnEnemy(enemyId);
+        enemySpawner.despawn(enemyId);
         return;
     }
     enemies.data.state[enemyId]--;
 }
-
-function winGame() {
-    alert("you win! restart?");
-    resetGameState();
-}
 function loseGame() {
     alert("game over, restart?");
+    resetGameState();
+}
+function winGame() {
+    alert("you win! restart?");
     resetGameState();
 }
 function resetGameState() {
@@ -250,11 +210,19 @@ const spawnRadiusHalf = spawnRadius / 2;
 setInterval(() => {
     const x = playerX - spawnRadiusHalf + spawnRadius * Math.random();
     const y = playerY - spawnRadiusHalf + spawnRadius * Math.random();
-    spawnEnemy(x, y, 0);
+    const result = enemySpawner.spawn(x, y, 0);
+    if (result.justReachedFull) {
+        winGame();
+        return;
+    }
 }, 2000);
 
 setInterval(() => {
     const vx = direction[0] * movementConfig.bulletsInitialVelocity;
     const vy = direction[1] * movementConfig.bulletsInitialVelocity;
-    spawnBullet(playerX, playerY, 0, [vx, vy]);
+    const result = bulletSpawner.spawn(playerX, playerY, 0, vx, vy);
+    if (result.justReachedFull) {
+        alert("out of ammo. sorry");
+        return;
+    }
 }, 1000);
