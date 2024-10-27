@@ -1,43 +1,44 @@
 import * as Phaser from "./node_modules/phaser/dist/phaser.esm.js";
-import Soa from "./soa.js";
 
 const movementConfig = {
-    playerSpeed: 5,
-    enemiesSpeed: 1,
+    playerSpeed: 300,
+    enemiesSpeed: 80,
     bulletsInitialVelocity: 1200,
-    velocityDamp: 0.99,
+    bulletsVelocityDamp: 0.99,
 };
 const enemyHealth = 2;
 
-const PHYSICS_FPS = 60;
 const SCENE_WIDTH = 1920;
 const SCENE_HEIGHT = 1080;
 const SPRITE_SIZE = 128;
 const ENEMIES_COUNT_MAX = 2**8;
 const BULLETS_COUNT_MAX = 2**8;
 
-const sceneCenterX = SCENE_WIDTH / 2;
-const sceneCenterY = SCENE_HEIGHT / 2;
-const dt = 1 / PHYSICS_FPS;
-
 const actors = {
     enemies: new Array(ENEMIES_COUNT_MAX),
     bullets: new Array(BULLETS_COUNT_MAX),
 };
-const enemies = new Soa({
-    state: Uint8Array,
-    type: Uint8Array,
-    x: Float64Array,
-    y: Float64Array,
-}, ENEMIES_COUNT_MAX);
-const bullets = new Soa({
-    state: Uint8Array,
-    type: Uint8Array,
-    x: Float64Array,
-    y: Float64Array,
-    vx: Float64Array,
-    vy: Float64Array,
-}, ENEMIES_COUNT_MAX);
+
+const sceneCenterX = SCENE_WIDTH / 2;
+const sceneCenterY = SCENE_HEIGHT / 2;
+
+const enemiesState = new Uint8Array(ENEMIES_COUNT_MAX);
+const enemiesType = new Uint8Array(ENEMIES_COUNT_MAX);
+const enemiesX = new Float64Array(ENEMIES_COUNT_MAX);
+const enemiesY = new Float64Array(ENEMIES_COUNT_MAX);
+let enemiesLargestId = -1;
+enemiesX.fill(NaN);
+enemiesY.fill(NaN);
+
+const bulletsState = new Uint8Array(BULLETS_COUNT_MAX);
+const bulletsType = new Uint8Array(BULLETS_COUNT_MAX);
+const bulletsX = new Float64Array(BULLETS_COUNT_MAX);
+const bulletsY = new Float64Array(BULLETS_COUNT_MAX);
+const bulletsVX = new Float64Array(BULLETS_COUNT_MAX);
+const bulletsVY = new Float64Array(BULLETS_COUNT_MAX);
+let bulletsLargestId = -1;
+bulletsX.fill(NaN);
+bulletsY.fill(NaN);
 
 const input = [0, 0];
 const direction = [1, 0];
@@ -73,18 +74,18 @@ const game = new Phaser.Game({
     width: SCENE_WIDTH,
     height: SCENE_HEIGHT,
     scene: scenes.main,
-    physics: { default: "arcade", fps: PHYSICS_FPS, },
+    physics: { default: "arcade" },
 });
 
-function physicsLoop() {
+function physicsLoop(dt) {
     updateInput();
 
-    applyPlayerMovement();
-    enemies.iterate(applyTowardsPlayerMovement, movementConfig.enemiesSpeed);
-    bullets.iterate(applyVelocityBasedMovement);
+    applyPlayerMovement(dt);
+    applyEnemiesMovement(dt);
+    applyBulletsMovement(dt);
 
-    enemies.iterate(updatePosition, actors.enemies);
-    bullets.iterate(updatePosition, actors.bullets);
+    updateEnemiesPositions();
+    updateBulletsPositions();
 }
 
 function updateInput() {
@@ -116,111 +117,179 @@ function updateInput() {
     direction[1] = manY;
 }
 
-function applyPlayerMovement() {
-    playerX += input[0] * movementConfig.playerSpeed;
-    playerY += input[1] * movementConfig.playerSpeed;
+function applyPlayerMovement(dt) {
+    const speed = movementConfig.playerSpeed * dt;
+    playerX += input[0] * speed;
+    playerY += input[1] * speed;
 }
-
-function applyVelocityBasedMovement(id, { x, y, vx, vy }) {
-    x[id] += vx[id] * dt;
-    y[id] += vy[id] * dt;
-    vx[id] *= movementConfig.velocityDamp;
-    vy[id] *= movementConfig.velocityDamp;
-}
-function applyTowardsPlayerMovement(id, { x, y }, speed) {
-    const manX = playerX - x[id];
-    const manY = playerY - y[id];
-    const eucSq = manX**2 + manY**2;
-
-    let euc;
-    let eigX;
-    let eigY;
-    if (eucSq < 1) {
-        euc = 1;
-        eigX = manX;
-        eigY = manY;
-    } else {
-        euc = eucSq**0.5;
-        eigX = manX / euc;
-        eigY = manY / euc;
-    }
+function applyEnemiesMovement(dt) {
+    const speed = movementConfig.enemiesSpeed * dt;
     
-    x[id] += eigX * speed;
-    y[id] += eigY * speed;
+    for (let enemyId = 0; enemyId <= enemiesLargestId; enemyId++) {
+        if (!enemiesState[enemyId]) {
+            continue;
+        }
+        const manX = playerX - enemiesX[enemyId];
+        const manY = playerY - enemiesY[enemyId];
+        const eucSq = manX**2 + manY**2;
+
+        let euc;
+        let eigX;
+        let eigY;
+        if (eucSq < 1) {
+            euc = 1;
+            eigX = manX;
+            eigY = manY;
+        } else {
+            euc = eucSq**0.5;
+            eigX = manX / euc;
+            eigY = manY / euc;
+        }
+
+        enemiesX[enemyId] += eigX * speed;
+        enemiesY[enemyId] += eigY * speed;
+    }
 }
-function updatePosition(id, { x, y }, actorGroup) {
-    actorGroup[id].setPosition(
-        sceneCenterX - playerX + x[id],
-        sceneCenterY - playerY + y[id],
-    );
+function applyBulletsMovement(dt) {
+    for (let bulletId = 0; bulletId <= bulletsLargestId; bulletId++) {
+        if (!bulletsState[bulletId]) {
+            continue;
+        }
+
+        bulletsX[bulletId] += bulletsVX[bulletId] * dt;
+        bulletsY[bulletId] += bulletsVY[bulletId] * dt;
+        bulletsVX[bulletId] *= movementConfig.bulletsVelocityDamp;
+        bulletsVY[bulletId] *= movementConfig.bulletsVelocityDamp;
+    }
+}
+
+function updateEnemiesPositions() {
+    for (let enemyId = 0; enemyId <= enemiesLargestId; enemyId++) {
+        if (!enemiesState[enemyId]) {
+            continue;
+        }
+        const x = sceneCenterX - playerX + enemiesX[enemyId];
+        const y = sceneCenterY - playerY + enemiesY[enemyId];
+        actors.enemies[enemyId].setPosition(x, y);
+    }
+}
+function updateBulletsPositions() {
+    for (let bulletId = 0; bulletId <= bulletsLargestId; bulletId++) {
+        if (!bulletsState[bulletId]) {
+            continue;
+        }
+        const x = sceneCenterX - playerX + bulletsX[bulletId];
+        const y = sceneCenterY - playerY + bulletsY[bulletId];
+        actors.bullets[bulletId].setPosition(x, y);
+    }
 }
 
 function spawnEnemy(x, y, type) {
-    const result = enemies.add({
-        state: enemyHealth,
-        type,
-        x,
-        y,
-    });
-    if (result.justReachedFull) {
+    if (enemiesLargestId == ENEMIES_COUNT_MAX) {
+        return;
+    }
+    let enemyId = enemiesLargestId + 1;
+    for (let id = 0; id < enemyId; id++) {
+        if (!enemiesState[id]) {
+            enemyId = id;
+            break;
+        }
+    }
+    enemiesLargestId = Math.max(enemiesLargestId, enemyId);
+    if (enemiesLargestId == ENEMIES_COUNT_MAX) {
         winGame();
         return;
     }
-    actors.enemies[result.id] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `monster_${type}`);
-    actors.enemies[result.id].setName(result.id);
-    actors.enemies[result.id].setCircle(SPRITE_SIZE / 2, 0, 0);
-    scenes.main.physics.add.collider(actors.player, actors.enemies[result.id], loseGame);
-    actors.enemies[result.id].setPosition(x, y);
+    enemiesState[enemyId] = enemyHealth;
+    enemiesType[enemyId] = type;
+    enemiesX[enemyId] = x;
+    enemiesY[enemyId] = y;
+    actors.enemies[enemyId] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `monster_${type}`);
+    actors.enemies[enemyId].setName(enemyId);
+    actors.enemies[enemyId].setCircle(SPRITE_SIZE / 2, 0, 0);
+    scenes.main.physics.add.collider(actors.player, actors.enemies[enemyId], loseGame);
+    actors.enemies[enemyId].setPosition(x, y);
 }
 function despawnEnemy(enemyId) {
-    const result = enemies.remove(enemyId);
-    if (!result.removed) {
+    if (!enemiesState[enemyId]) {
         return;
     }
+    enemiesState[enemyId] = 0;
+    enemiesX[enemyId] = NaN;
+    enemiesY[enemyId] = NaN;
     actors.enemies[enemyId].destroy();
     actors.enemies[enemyId] = undefined;
-}
-function spawnBullet(x, y, type, initialVelocity) {
-    const result = bullets.add({
-        state: 1,
-        type,
-        x,
-        y,
-        vx: initialVelocity[0],
-        vy: initialVelocity[1],
-    });
-    if (result.id == -1) {
-        return;
-    }
-    
-    if (result.justReachedFull) {
-        alert("out of ammo. sorry");
-        return;
-    }
 
-    actors.bullets[result.id] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `bullet_${type}`);
-    actors.bullets[result.id].setName(result.id);
-    actors.bullets[result.id].setCircle(SPRITE_SIZE / 2, 0, 0);
-    scenes.main.physics.add.collider(actors.bullets[result.id], actors.enemies, hitEnemy);
-    actors.bullets[result.id].setPosition(x, y);
-    actors.bullets[result.id].setFriction(0);
+    if (enemyId != enemiesLargestId) {
+        return;
+    }
+    for (let id = enemiesLargestId - 1; id >= 0; id--) {
+        if (!enemiesState[id]) {
+            continue;
+        }
+        enemiesLargestId = id;
+        break;
+    }
+}
+
+function spawnBullet(x, y, type, initialVelocity) {
+    if (bulletsLargestId == BULLETS_COUNT_MAX) {
+        return;
+    }
+    let bulletId = bulletsLargestId + 1;
+    for (let id = 0; id < bulletId; id++) {
+        if (!bulletsState[id]) {
+            bulletId = id;
+            break;
+        }
+    }
+    bulletsLargestId = Math.max(bulletsLargestId, bulletId);
+    if (bulletsLargestId == BULLETS_COUNT_MAX) {
+        alert("out of ammo. sorry");
+    }
+    bulletsState[bulletId] = 1;
+    bulletsType[bulletId] = type;
+    bulletsX[bulletId] = x;
+    bulletsY[bulletId] = y;
+
+    actors.bullets[bulletId] = scenes.main.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, `bullet_${type}`);
+    actors.bullets[bulletId].setName(bulletId);
+    actors.bullets[bulletId].setCircle(SPRITE_SIZE / 2, 0, 0);
+    scenes.main.physics.add.collider(actors.bullets[bulletId], actors.enemies, hitEnemy);
+    actors.bullets[bulletId].setPosition(x, y);
+    actors.bullets[bulletId].setFriction(0);
+    bulletsVX[bulletId] = initialVelocity[0];
+    bulletsVY[bulletId] = initialVelocity[1];
 }
 function despawnBullet(bulletId) {
-    const result = bullets.remove(bulletId);
-    if (!result.removed) {
+    if (!bulletsState[bulletId]) {
         return;
     }
+    bulletsState[bulletId] = 0;
+    bulletsX[bulletId] = NaN;
+    bulletsY[bulletId] = NaN;
     actors.bullets[bulletId].destroy();
     actors.bullets[bulletId] = undefined;
+
+    if (bulletId != bulletsLargestId) {
+        return;
+    }
+    for (let id = bulletsLargestId - 1; id >= 0; id--) {
+        if (!bulletsState[id]) {
+            continue;
+        }
+        bulletsLargestId = id;
+        break;
+    }
 }
 
 function hitEnemy({ name: bulletId }, { name: enemyId }) {
     despawnBullet(bulletId);
-    if (enemies.data.state[enemyId] == 1) {
+    if (enemiesState[enemyId] == 1) {
         despawnEnemy(enemyId);
         return;
     }
-    enemies.data.state[enemyId]--;
+    enemiesState[enemyId]--;
 }
 
 function winGame() {
@@ -232,17 +301,15 @@ function loseGame() {
     resetGameState();
 }
 function resetGameState() {
-    for (let id = 0; id < ENEMIES_COUNT_MAX; id++) {
-        actors.enemies[id]?.destroy();
+    for (let id = 0; id <= enemiesLargestId; id++) {
+        actors.enemies[id].destroy();
     }
     actors.enemies.fill(undefined);
-    enemies.reset();
-
-    for (let id = 0; id < BULLETS_COUNT_MAX; id++) {
-        actors.bullets[id]?.destroy();
-    }
-    actors.bullets.fill(undefined);
-    bullets.reset();
+    
+    enemiesLargestId = -1;
+    enemiesState.fill(0);
+    enemiesX.fill(NaN);
+    enemiesY.fill(NaN);
 }
 
 const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT);
