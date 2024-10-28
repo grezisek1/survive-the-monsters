@@ -94,7 +94,6 @@ export default class GameplayController {
         const result = this.bulletSpawner.spawn(position[0], position[1], 0, vx, vy);
         // if (result.justReachedFull) {
         //     alert("out of ammo. sorry");
-        //     return;
         // }
     }
 
@@ -145,5 +144,10 @@ export default class GameplayController {
         this.controllerState.enemySpawnTimeAcc = 0;
         this.controllerState.bulletSpawnTimeAcc = 0;
         this.controllerState.playing = false;
+
+        direction[0] = 1;
+        direction[1] = 0;
+        position[0] = 0;
+        position[1] = 0;
     }
 }

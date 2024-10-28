@@ -29,8 +29,9 @@ const scenes = {
 };
 scenes.main.preload = function() {
     this.load.image("player", "sprites/players/mvp_player/idle_0.png");
-    this.load.image("monster_0", "sprites/monsters/mvp_monster_0/idle_0.png");
-    this.load.image("monster_1", "sprites/monsters/mvp_monster_1/idle_0.png");
+    for (let i = 0; i < enemyTypes.length; i++) {
+        this.load.image(`monster_${i}`, `sprites/monsters/mvp_monster_${i}/idle_0.png`);
+    }
     this.load.image("bullet_0", "sprites/bullets/mvp_bullet_0/idle_0.png");
 };
 scenes.main.create = function() {
