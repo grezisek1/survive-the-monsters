@@ -59,9 +59,11 @@ export const bullets = new Soa({
 
 export const progressMilestones = [
     0,
-    60 * 5,
-    60 * 10,
-    60 * 20,
-    60 * 25,
-    60 * 28,
+    5,
+    // 60 * 5,
+    // 60 * 10,
+    // 60 * 20,
+    // 60 * 25,
+    // 60 * 28,
+    // TIME_MAX,
 ];
