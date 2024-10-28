@@ -21,9 +21,9 @@ import {
     bullets,
     progressMilestones,
 } from "./data.js";
-const dt = 1 / PHYSICS_FPS;
 const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT);
 const spawnRadiusHalf = spawnRadius / 2;
+const dt = 1 / PHYSICS_FPS;
 
 export default class GameplayController {
     constructor(enemySpawner, bulletSpawner) {
@@ -110,7 +110,6 @@ export default class GameplayController {
         alert("you win! restart?");
         this.#resetState();
     }
-
     #resetState() {
         for (let id = 0; id < ENEMIES_COUNT_MAX; id++) {
             actors.enemies[id]?.destroy();

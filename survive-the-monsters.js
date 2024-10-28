@@ -1,6 +1,7 @@
 import * as Phaser from "./node_modules/phaser/dist/phaser.esm.js";
 import EnemySpawner from "./enemy-spawner.js";
 import BulletSpawner from "./bullet-spawner.js";
+import GameplayController from "./gameplay-controller.js";
 import {
     PHYSICS_FPS,
     SCENE_WIDTH,
@@ -19,12 +20,9 @@ import {
     enemies,
     bullets,
 } from "./data.js";
-import GameplayController from "./gameplay-controller.js";
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
 const dt = 1 / PHYSICS_FPS;
-
-let inputKeys;
 
 const scenes = {
     main: new Phaser.Scene("MainScene"),
@@ -48,6 +46,13 @@ scenes.main.create = function() {
         right: "D",
     });
 };
+const game = new Phaser.Game({
+    type: Phaser.AUTO,
+    width: SCENE_WIDTH,
+    height: SCENE_HEIGHT,
+    scene: scenes.main,
+    physics: { default: "arcade", fps: PHYSICS_FPS, },
+});
 
 const enemySpawner = new EnemySpawner(enemyTypes, scenes.main, function(_, { name: enemyId }) {
     controller.hitPlayer(enemyId);
@@ -56,14 +61,6 @@ const bulletSpawner = new BulletSpawner(bulletTypes, scenes.main, function({ nam
     controller.hitEnemy(bulletId, enemyId);
 });
 const controller = new GameplayController(enemySpawner, bulletSpawner);
-
-const game = new Phaser.Game({
-    type: Phaser.AUTO,
-    width: SCENE_WIDTH,
-    height: SCENE_HEIGHT,
-    scene: scenes.main,
-    physics: { default: "arcade", fps: PHYSICS_FPS, },
-});
 
 function physicsLoop() {
     updateInput();
@@ -79,6 +76,7 @@ function physicsLoop() {
     controller.update();
 }
 
+let inputKeys;
 function updateInput() {
     const manX = Number(inputKeys.right.isDown) - Number(inputKeys.left.isDown);
     const manY = Number(inputKeys.down.isDown) - Number(inputKeys.up.isDown);
@@ -107,6 +105,7 @@ function updateInput() {
     direction[0] = manX;
     direction[1] = manY;
 }
+
 function applyVelocityBasedMovement(id, { x, y, vx, vy }) {
     x[id] += vx[id] * dt;
     y[id] += vy[id] * dt;
