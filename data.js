@@ -22,9 +22,13 @@ export const enemyTypes = [
         size: 128,
     },
     {
-        maxHealth: 2,
+        maxHealth: 4,
         size: 128,
-    }
+    },
+    {
+        maxHealth: 8,
+        size: 128,
+    },
 ];
 export const bulletTypes = [
     {
@@ -59,9 +63,23 @@ export const bullets = new Soa({
 
 export const progressMilestones = [
     0,
-    60 * 5,
-    60 * 10,
-    60 * 20,
-    60 * 25,
-    60 * 28,
+    5,
+    10,
+    TIME_MAX,
+    // 0,
+    // 60 * 5,
+    // 60 * 10,
+    // 60 * 20,
+    // 60 * 25,
+    // 60 * 28,
+    // TIME_MAX,
+];
+export const progressMilestonesEnemies = [
+    [0],
+    [0, 1],
+    [0, 1, 2],
+    [1, 2],
+    [1],
+    [1],
+    [1],
 ];

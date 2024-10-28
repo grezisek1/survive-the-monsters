@@ -20,6 +20,7 @@ import {
     enemies,
     bullets,
     progressMilestones,
+    progressMilestonesEnemies,
 } from "./data.js";
 const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT);
 const spawnRadiusHalf = spawnRadius / 2;
@@ -64,24 +65,36 @@ export default class GameplayController {
         }
 
         this.gameProgressState.time += dt;
+        
+        const nextMilestone = this.gameProgressState.milestone + 1;
+        if (nextMilestone == progressMilestones.length) {
+            this.winGame();
+            return;
+        }
+
+        const nextMilestoneTime = progressMilestones[nextMilestone];
+        if (this.gameProgressState.time > nextMilestoneTime) {
+            this.gameProgressState.milestone = nextMilestone;
+        }
     }
     #spawnEnemy() {
         const x = position[0] - spawnRadiusHalf + spawnRadius * Math.random();
         const y = position[1] - spawnRadiusHalf + spawnRadius * Math.random();
-        const result = this.enemySpawner.spawn(x, y, 0);
-        if (result.justReachedFull) {
-            winGame();
-            return;
-        }
+        
+        const enemyTypes = progressMilestonesEnemies[this.gameProgressState.milestone];
+        const type = Math.floor(Math.random() * enemyTypes.length);
+        const result = this.enemySpawner.spawn(x, y, type);
+        // if (result.justReachedFull) {
+        //     return;
+        // }
     }
     #spawnBullet() {
         const vx = direction[0] * movementConfig.bulletsInitialVelocity;
         const vy = direction[1] * movementConfig.bulletsInitialVelocity;
         const result = this.bulletSpawner.spawn(position[0], position[1], 0, vx, vy);
-        if (result.justReachedFull) {
-            alert("out of ammo. sorry");
-            return;
-        }
+        // if (result.justReachedFull) {
+        //     alert("out of ammo. sorry");
+        // }
     }
 
     end() {
@@ -109,6 +122,7 @@ export default class GameplayController {
     winGame() {
         alert("you win! restart?");
         this.#resetState();
+        this.start();
     }
     #resetState() {
         for (let id = 0; id < ENEMIES_COUNT_MAX; id++) {
@@ -130,5 +144,10 @@ export default class GameplayController {
         this.controllerState.enemySpawnTimeAcc = 0;
         this.controllerState.bulletSpawnTimeAcc = 0;
         this.controllerState.playing = false;
+
+        direction[0] = 1;
+        direction[1] = 0;
+        position[0] = 0;
+        position[1] = 0;
     }
 }
