@@ -59,11 +59,22 @@ export const bullets = new Soa({
 
 export const progressMilestones = [
     0,
-    5,
+    15,
+    TIME_MAX,
+    // 0,
     // 60 * 5,
     // 60 * 10,
     // 60 * 20,
     // 60 * 25,
     // 60 * 28,
     // TIME_MAX,
+];
+export const progressMilestonesEnemies = [
+    [0],
+    [0, 1],
+    [0, 1],
+    [0, 1],
+    [0, 1],
+    [0, 1],
+    [0, 1],
 ];

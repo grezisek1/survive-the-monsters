@@ -20,6 +20,7 @@ import {
     enemies,
     bullets,
     progressMilestones,
+    progressMilestonesEnemies,
 } from "./data.js";
 const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT);
 const spawnRadiusHalf = spawnRadius / 2;
@@ -70,17 +71,19 @@ export default class GameplayController {
             this.winGame();
             return;
         }
-        const nextMilestoneTime = progressMilestones[nextMilestone];
 
+        const nextMilestoneTime = progressMilestones[nextMilestone];
         if (this.gameProgressState.time > nextMilestoneTime) {
             this.gameProgressState.milestone = nextMilestone;
-            console.log("milestone")
         }
     }
     #spawnEnemy() {
         const x = position[0] - spawnRadiusHalf + spawnRadius * Math.random();
         const y = position[1] - spawnRadiusHalf + spawnRadius * Math.random();
-        const result = this.enemySpawner.spawn(x, y, 0);
+        
+        const enemyTypes = progressMilestonesEnemies[this.gameProgressState.milestone];
+        const type = Math.floor(Math.random() * enemyTypes.length);
+        const result = this.enemySpawner.spawn(x, y, type);
         // if (result.justReachedFull) {
         //     return;
         // }
