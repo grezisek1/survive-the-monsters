@@ -21,10 +21,7 @@ import {
     enemies,
     bullets,
 } from "./data.js";
-import {
-    loseGame,
-    startRuntime,
-} from "./gameplay-controller.js";
+import GameplayController from "./gameplay-controller.js";
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
 const dt = 1 / PHYSICS_FPS;
@@ -54,8 +51,13 @@ scenes.main.create = function() {
     });
 };
 
-const enemySpawner = new EnemySpawner(actors, enemies, enemyTypes, scenes.main, loseGame);
-const bulletSpawner = new BulletSpawner(actors, bullets, bulletTypes, scenes.main, hitEnemy);
+const enemySpawner = new EnemySpawner(actors, enemies, enemyTypes, scenes.main, function(_, { name: enemyId }) {
+    controller.hitPlayer(enemyId);
+});
+const bulletSpawner = new BulletSpawner(actors, bullets, bulletTypes, scenes.main, function({ name: bulletId }, { name: enemyId }) {
+    controller.hitEnemy(bulletId, enemyId);
+});
+const controller = new GameplayController(enemySpawner, bulletSpawner);
 
 const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -68,12 +70,15 @@ const game = new Phaser.Game({
 function physicsLoop() {
     updateInput();
 
-    applyPlayerMovement();
+    position[0] += input[0] * movementConfig.playerSpeed;
+    position[1] += input[1] * movementConfig.playerSpeed;
     enemies.iterate(applyTowardsPlayerMovement, movementConfig.enemiesSpeed);
     bullets.iterate(applyVelocityBasedMovement);
 
     enemies.iterate(updatePosition, actors.enemies);
     bullets.iterate(updatePosition, actors.bullets);
+
+    controller.update();
 }
 
 function updateInput() {
@@ -104,11 +109,6 @@ function updateInput() {
     direction[0] = manX;
     direction[1] = manY;
 }
-
-function applyPlayerMovement() {
-    position[0] += input[0] * movementConfig.playerSpeed;
-    position[1] += input[1] * movementConfig.playerSpeed;
-}
 function applyVelocityBasedMovement(id, { x, y, vx, vy }) {
     x[id] += vx[id] * dt;
     y[id] += vy[id] * dt;
@@ -136,7 +136,6 @@ function applyTowardsPlayerMovement(id, { x, y }, speed) {
     x[id] += eigX * speed;
     y[id] += eigY * speed;
 }
-
 function updatePosition(id, { x, y }, actorGroup) {
     actorGroup[id].setPosition(
         sceneCenterX - position[0] + x[id],
@@ -144,13 +143,4 @@ function updatePosition(id, { x, y }, actorGroup) {
     );
 }
 
-function hitEnemy({ name: bulletId }, { name: enemyId }) {
-    bulletSpawner.despawn(bulletId);
-    if (enemies.data.state[enemyId] == 1) {
-        enemySpawner.despawn(enemyId);
-        return;
-    }
-    enemies.data.state[enemyId]--;
-}
-
-startRuntime(enemySpawner, bulletSpawner);
+controller.start();

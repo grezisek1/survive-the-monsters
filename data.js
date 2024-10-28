@@ -6,6 +6,9 @@ export const SCENE_HEIGHT = 1080;
 export const SPRITE_SIZE = 128;
 export const ENEMIES_COUNT_MAX = 2**8;
 export const BULLETS_COUNT_MAX = 2**8;
+export const TIME_MAX = 60 * 30;
+export const ENEMY_SPAWN_INTERVAL = 2;
+export const BULLET_SPAWN_INTERVAL = 1;
 
 export const movementConfig = {
     playerSpeed: 5,
@@ -53,3 +56,12 @@ export const bullets = new Soa({
     vx: Float64Array,
     vy: Float64Array,
 }, ENEMIES_COUNT_MAX);
+
+export const progressMilestones = [
+    0,
+    60 * 5,
+    60 * 10,
+    60 * 20,
+    60 * 25,
+    60 * 28,
+];
