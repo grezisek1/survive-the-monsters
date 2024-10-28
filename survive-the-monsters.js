@@ -6,8 +6,6 @@ import {
     SCENE_WIDTH,
     SCENE_HEIGHT,
     SPRITE_SIZE,
-    ENEMIES_COUNT_MAX,
-    BULLETS_COUNT_MAX,
 
     movementConfig,
     enemyTypes,
@@ -51,10 +49,10 @@ scenes.main.create = function() {
     });
 };
 
-const enemySpawner = new EnemySpawner(actors, enemies, enemyTypes, scenes.main, function(_, { name: enemyId }) {
+const enemySpawner = new EnemySpawner(enemyTypes, scenes.main, function(_, { name: enemyId }) {
     controller.hitPlayer(enemyId);
 });
-const bulletSpawner = new BulletSpawner(actors, bullets, bulletTypes, scenes.main, function({ name: bulletId }, { name: enemyId }) {
+const bulletSpawner = new BulletSpawner(bulletTypes, scenes.main, function({ name: bulletId }, { name: enemyId }) {
     controller.hitEnemy(bulletId, enemyId);
 });
 const controller = new GameplayController(enemySpawner, bulletSpawner);
