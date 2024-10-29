@@ -13,10 +13,12 @@ export const BULLET_SPAWN_INTERVAL = 1;
 export const movementConfig = {
     playerSpeed: 5,
     enemiesSpeed: 1,
-    bulletsInitialVelocity: 1200,
-    velocityDamp: 0.99,
 };
 export const enemyTypes = [
+    {
+        maxHealth: 1,
+        size: 128,
+    },
     {
         maxHealth: 2,
         size: 128,
@@ -32,6 +34,12 @@ export const enemyTypes = [
 ];
 export const bulletTypes = [
     {
+        name: "handgun",
+        velocity: 1200,
+        velocityDamp: 1,
+        reloadTime: 1,
+        despawnTime: 2,
+        damage: 2,
         size: 128,
     },
 ];
@@ -53,17 +61,17 @@ export const enemies = new Soa({
 }, ENEMIES_COUNT_MAX);
 
 export const bullets = new Soa({
-    state: Uint8Array,
+    state: Float32Array,
     type: Uint8Array,
     x: Float64Array,
     y: Float64Array,
     vx: Float64Array,
     vy: Float64Array,
+    velocityDamp: Float64Array,
 }, ENEMIES_COUNT_MAX);
 
 export const progressMilestones = [
     0,
-    5,
     10,
     TIME_MAX,
     // 0,
@@ -76,9 +84,9 @@ export const progressMilestones = [
 ];
 export const progressMilestonesEnemies = [
     [0],
-    [0, 1],
-    [0, 1, 2],
-    [1, 2],
+    [1],
+    [1],
+    [1],
     [1],
     [1],
     [1],
