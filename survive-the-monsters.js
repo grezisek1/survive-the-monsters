@@ -69,7 +69,8 @@ function physicsLoop() {
     position[0] += input[0] * movementConfig.playerSpeed;
     position[1] += input[1] * movementConfig.playerSpeed;
     enemies.iterate(applyTowardsPlayerMovement, movementConfig.enemiesSpeed);
-    bullets.iterate(applyVelocityBasedMovement);
+    bullets.iterate(applyBulletMovement);
+    bullets.iterate(updateBulletState);
 
     enemies.iterate(updatePosition, actors.enemies);
     bullets.iterate(updatePosition, actors.bullets);
@@ -107,11 +108,17 @@ function updateInput() {
     direction[1] = manY;
 }
 
-function applyVelocityBasedMovement(id, { x, y, vx, vy }) {
+function applyBulletMovement(id, { x, y, vx, vy, velocityDamp }) {
     x[id] += vx[id] * dt;
     y[id] += vy[id] * dt;
-    vx[id] *= movementConfig.velocityDamp;
-    vy[id] *= movementConfig.velocityDamp;
+    vx[id] *= velocityDamp[id];
+    vy[id] *= velocityDamp[id];
+}
+function updateBulletState(id, { state }) {
+    state[id] -= dt;
+    if (state[id] <= 0) {
+        bulletSpawner.despawn(id);
+    }
 }
 function applyTowardsPlayerMovement(id, { x, y }, speed) {
     const manX = position[0] - x[id];

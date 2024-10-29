@@ -34,10 +34,11 @@ export default class GameplayController {
             time: 0,
             kills: 0,
             milestone: 0,
+            weapons: [0],
         };
         this.controllerState = {
             enemySpawnTimeAcc: 0,
-            bulletSpawnTimeAcc: 0,
+            bulletSpawnTimeAcc: [0],
             playing: false
         };
     }
@@ -58,10 +59,15 @@ export default class GameplayController {
             this.#spawnEnemy();
         }
 
-        this.controllerState.bulletSpawnTimeAcc += dt;
-        if (this.controllerState.bulletSpawnTimeAcc > BULLET_SPAWN_INTERVAL) {
-            this.controllerState.bulletSpawnTimeAcc %= BULLET_SPAWN_INTERVAL;
-            this.#spawnBullet();
+        const weaponCount = this.gameProgressState.weapons.length;
+        for (let weaponIndex = 0; weaponIndex < weaponCount; weaponIndex++) {
+            const weaponId = this.gameProgressState.weapons[weaponIndex];
+            const reloadTime = bulletTypes[weaponId].reloadTime;
+            this.controllerState.bulletSpawnTimeAcc[weaponIndex] += dt;
+            if (this.controllerState.bulletSpawnTimeAcc[weaponIndex] > reloadTime) {
+                this.controllerState.bulletSpawnTimeAcc[weaponIndex] %= reloadTime;
+                this.#spawnBullet(weaponId);
+            }
         }
 
         this.gameProgressState.time += dt;
@@ -82,16 +88,14 @@ export default class GameplayController {
         const y = position[1] - spawnRadiusHalf + spawnRadius * Math.random();
         
         const enemyTypes = progressMilestonesEnemies[this.gameProgressState.milestone];
-        const type = Math.floor(Math.random() * enemyTypes.length);
-        const result = this.enemySpawner.spawn(x, y, type);
+        const typeIndex = Math.floor(Math.random() * enemyTypes.length);
+        const result = this.enemySpawner.spawn(x, y, enemyTypes[typeIndex]);
         // if (result.justReachedFull) {
         //     return;
         // }
     }
-    #spawnBullet() {
-        const vx = direction[0] * movementConfig.bulletsInitialVelocity;
-        const vy = direction[1] * movementConfig.bulletsInitialVelocity;
-        const result = this.bulletSpawner.spawn(position[0], position[1], 0, vx, vy);
+    #spawnBullet(weaponId) {
+        const result = this.bulletSpawner.spawn(weaponId);
         // if (result.justReachedFull) {
         //     alert("out of ammo. sorry");
         // }
@@ -102,13 +106,14 @@ export default class GameplayController {
     }
 
     hitEnemy(bulletId, enemyId) {
+        const type = bullets.data.type[bulletId];
+        const damage = bulletTypes[type].damage;
+        enemies.data.state[enemyId] = Math.max(0, enemies.data.state[enemyId] - damage);
         this.bulletSpawner.despawn(bulletId);
-        if (enemies.data.state[enemyId] == 1) {
+        if (enemies.data.state[enemyId] == 0) {
             this.enemySpawner.despawn(enemyId);
             this.gameProgressState.kills++;
-            return;
         }
-        enemies.data.state[enemyId]--;
     }
     hitPlayer(bulletId) {
         this.loseGame();
@@ -140,9 +145,10 @@ export default class GameplayController {
         this.gameProgressState.time = 0;
         this.gameProgressState.kills = 0;
         this.gameProgressState.milestone = 0;
+        this.gameProgressState.weapons = [0];
 
         this.controllerState.enemySpawnTimeAcc = 0;
-        this.controllerState.bulletSpawnTimeAcc = 0;
+        this.controllerState.bulletSpawnTimeAcc = [0];
         this.controllerState.playing = false;
 
         direction[0] = 1;
