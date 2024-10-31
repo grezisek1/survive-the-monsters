@@ -24,6 +24,7 @@ export default class BulletSpawner {
         const velocityDamp = this.#bulletTypes[type].velocityDamp;
         
         const result = bullets.add({ state, type, x, y, vx, vy, velocityDamp });
+
         if (result.id == -1) {
             return result;
         }
@@ -33,6 +34,7 @@ export default class BulletSpawner {
         actors.bullets[result.id].setCircle(size / 2, 0, 0);
         this.#scene.physics.add.collider(actors.bullets[result.id], actors.enemies, this.#onEnemyTouch);
         actors.bullets[result.id].setPosition(x, y);
+        actors.bullets[result.id].setVisible(false);
         return result;
     }
 

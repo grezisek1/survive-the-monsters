@@ -20,8 +20,7 @@ import {
     progressMilestones,
     progressMilestonesEnemies,
 } from "./data.js";
-const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT);
-const spawnRadiusHalf = spawnRadius / 2;
+const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT) / 2;
 const dt = 1 / PHYSICS_FPS;
 
 export default class GameplayController {
@@ -82,8 +81,18 @@ export default class GameplayController {
         }
     }
     #spawnEnemy() {
-        const x = position[0] - spawnRadiusHalf + spawnRadius * Math.random();
-        const y = position[1] - spawnRadiusHalf + spawnRadius * Math.random();
+        const dir = [Math.random() - 0.5, Math.random() - 0.5];
+        const mSq = dir[0]**2 + dir[1]**2;
+        let x;
+        let y;
+        if (mSq < 0.001) {
+            x = spawnRadius;
+            y = 0;
+        } else {
+            const m = mSq**0.5;
+            x = dir[0] * spawnRadius / m;
+            y = dir[1] * spawnRadius / m;
+        }
         
         const enemyTypes = progressMilestonesEnemies[this.gameProgressState.milestone];
         const typeIndex = Math.floor(Math.random() * enemyTypes.length);

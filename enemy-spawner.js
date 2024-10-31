@@ -27,6 +27,7 @@ export default class EnemySpawner {
         actors.enemies[result.id].setCircle(radius, 0, 0);
         this.#scene.physics.add.collider(actors.player, actors.enemies[result.id], this.#onPlayerTouch);
         actors.enemies[result.id].setPosition(x, y);
+        actors.enemies[result.id].setVisible(false);
         return result;
     }
 

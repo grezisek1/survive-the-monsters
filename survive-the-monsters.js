@@ -73,9 +73,10 @@ function physicsLoop() {
     enemies.iterate(applyTowardsPlayerMovement);
     bullets.iterate(applyBulletMovement);
     bullets.iterate(updateBulletState);
-
     enemies.iterate(updatePosition, actors.enemies);
     bullets.iterate(updatePosition, actors.bullets);
+    enemies.iterate(workaroundSpawnGlitch, actors.enemies);
+    bullets.iterate(workaroundSpawnGlitch, actors.bullets);
 
     controller.update();
 }
@@ -150,6 +151,10 @@ function updatePosition(id, { x, y }, actorGroup) {
         sceneCenterX - position[0] + x[id],
         sceneCenterY - position[1] + y[id],
     );
+}
+
+function workaroundSpawnGlitch(id, _, actorGroup) {
+    actorGroup[id].setVisible(true);
 }
 
 controller.start();
