@@ -126,25 +126,23 @@ export const bullets = new Soa({
     velocityDamp: Float64Array,
 }, ENEMIES_COUNT_MAX);
 
-const gametimeScale = 0.1;
-
 export const progressMilestones = [
     0,
-    10 * gametimeScale,
-    20 * gametimeScale,
-    25 * gametimeScale,
-    30 * gametimeScale,
-    50 * gametimeScale,
-    60 * gametimeScale,
+    10,
+    20,
+    25,
+    30,
+    50,
+    60,
 
-    2 * 60 * gametimeScale,
-    4 * 60 * gametimeScale,
-    10 * 60 * gametimeScale,
-    12 * 60 * gametimeScale,
-    18 * 60 * gametimeScale,
-    24 * 60 * gametimeScale,
-    30 * 60 * gametimeScale,
-    40 * 60 * gametimeScale,
+    2 * 60,
+    4 * 60,
+    10 * 60,
+    12 * 60,
+    18 * 60,
+    24 * 60,
+    30 * 60,
+    40 * 60,
 ];
 export const progressMilestonesEnemies = [
     [0],

@@ -54,7 +54,7 @@ export default class GameplayController {
         }
 
         addWeapon: if (!this.controllerState.weaponSpawnedInMilestone) {
-            const rand = 1;
+            const rand = Math.random();
             if (rand > progressMilestonesWeaponChance[this.gameProgressState.milestone]) {
                 break addWeapon;
             }
