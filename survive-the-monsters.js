@@ -33,7 +33,7 @@ scenes.main.preload = function() {
         this.load.image(`monster_${i}`, `sprites/monsters/monster_${i}/image.png`);
     }
     for (let i = 0; i < bulletTypes.length; i++) {
-        this.load.image(`bullet_${i}`, `sprites/bullets/mvp_bullet_${i}/idle_0.png`);
+        this.load.image(`bullet_${i}`, `sprites/bullets/bullet_${i}/image.png`);
     }
 };
 scenes.main.create = function() {
