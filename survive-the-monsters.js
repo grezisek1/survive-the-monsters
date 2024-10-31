@@ -28,7 +28,7 @@ const scenes = {
     main: new Phaser.Scene("MainScene"),
 };
 scenes.main.preload = function() {
-    this.load.image("player", "sprites/players/mvp_player/idle_0.png");
+    this.load.image("player", "sprites/players/player/image.png");
     for (let i = 0; i < enemyTypes.length; i++) {
         this.load.image(`monster_${i}`, `sprites/monsters/monster_${i}/image.png`);
     }
