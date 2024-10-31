@@ -8,7 +8,7 @@ import {
     SCENE_HEIGHT,
     SPRITE_SIZE,
 
-    movementConfig,
+    playerSpeed,
     enemyTypes,
     bulletTypes,
 
@@ -30,9 +30,11 @@ const scenes = {
 scenes.main.preload = function() {
     this.load.image("player", "sprites/players/mvp_player/idle_0.png");
     for (let i = 0; i < enemyTypes.length; i++) {
-        this.load.image(`monster_${i}`, `sprites/monsters/mvp_monster_${i}/idle_0.png`);
+        this.load.image(`monster_${i}`, `sprites/monsters/monster_${i}/image.png`);
     }
-    this.load.image("bullet_0", "sprites/bullets/mvp_bullet_0/idle_0.png");
+    for (let i = 0; i < bulletTypes.length; i++) {
+        this.load.image(`bullet_${i}`, `sprites/bullets/mvp_bullet_${i}/idle_0.png`);
+    }
 };
 scenes.main.create = function() {
     actors.player = this.physics.add.image(SPRITE_SIZE, SPRITE_SIZE, "player");
@@ -66,9 +68,9 @@ const controller = new GameplayController(enemySpawner, bulletSpawner);
 function physicsLoop() {
     updateInput();
 
-    position[0] += input[0] * movementConfig.playerSpeed;
-    position[1] += input[1] * movementConfig.playerSpeed;
-    enemies.iterate(applyTowardsPlayerMovement, movementConfig.enemiesSpeed);
+    position[0] += input[0] * playerSpeed;
+    position[1] += input[1] * playerSpeed;
+    enemies.iterate(applyTowardsPlayerMovement);
     bullets.iterate(applyBulletMovement);
     bullets.iterate(updateBulletState);
 
@@ -120,7 +122,7 @@ function updateBulletState(id, { state }) {
         bulletSpawner.despawn(id);
     }
 }
-function applyTowardsPlayerMovement(id, { x, y }, speed) {
+function applyTowardsPlayerMovement(id, { x, y }) {
     const manX = position[0] - x[id];
     const manY = position[1] - y[id];
     const eucSq = manX**2 + manY**2;
@@ -138,6 +140,8 @@ function applyTowardsPlayerMovement(id, { x, y }, speed) {
         eigY = manY / euc;
     }
     
+    const type = enemies.data.type[id];
+    const speed = enemyTypes[type].speed;
     x[id] += eigX * speed;
     y[id] += eigY * speed;
 }

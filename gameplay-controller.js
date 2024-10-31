@@ -6,9 +6,7 @@ import {
     ENEMIES_COUNT_MAX,
     BULLETS_COUNT_MAX,
     ENEMY_SPAWN_INTERVAL,
-    BULLET_SPAWN_INTERVAL,
 
-    movementConfig,
     enemyTypes,
     bulletTypes,
 
