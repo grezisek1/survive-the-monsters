@@ -58,17 +58,15 @@ export default class GameplayController {
     }
     #mapLoaded = () => {
         map.removeEventListener("load", this.#mapLoaded);
-        setTimeout(() => {
-            this.state.mapAreaStart = (MAP_BORDER - map.width / 2) * CELL_SIZE;
-            this.state.mapAreaEnd = (map.width - MAP_BORDER - map.width / 2) * CELL_SIZE;
-            document.body.style.setProperty("--minimap-w", `${map.width}px`);
-            document.body.style.setProperty("--minimap-h", `${map.height}px`);
-            document.body.style.setProperty("--minimap-x", "0px");
-            document.body.style.setProperty("--minimap-y", "0px");
-            this.enemySpawner.reset();
-            this.bulletSpawner.reset();
-            this.state.playing = true;
-        }, 50);
+        this.state.mapAreaStart = (MAP_BORDER - map.width / 2) * CELL_SIZE;
+        this.state.mapAreaEnd = (map.width - MAP_BORDER - map.width / 2) * CELL_SIZE;
+        document.body.style.setProperty("--minimap-w", `${map.width}px`);
+        document.body.style.setProperty("--minimap-h", `${map.height}px`);
+        document.body.style.setProperty("--minimap-x", "0px");
+        document.body.style.setProperty("--minimap-y", "0px");
+        this.enemySpawner.reset();
+        this.bulletSpawner.reset();
+        this.state.playing = true;
     };
     
 
@@ -108,7 +106,7 @@ export default class GameplayController {
         this.state.bulletSpawnTimeAcc.push(0);
         this.state.weaponSpawnedInMilestone = true;
 
-        alert(`You found ${bulletTypes[typeIndex].name}`);
+        this.showAlert(`You found ${bulletTypes[typeIndex].name}`);
     }
     #trySpawnEnemy() {
         this.state.enemySpawnTimeAcc += dt;
@@ -131,7 +129,7 @@ export default class GameplayController {
             x = dir[0] * spawnRadius / m;
             y = dir[1] * spawnRadius / m;
         }
-        
+
         x += position[0]
         y += position[1];
 
@@ -185,13 +183,19 @@ export default class GameplayController {
 
     loseGame() {
         this.state.playing = false;
-        alert(`Game Over. You survived ${this.state.time>>0} seconds, killed ${this.state.kills} enemies and found ${this.state.weapons.length} weapons. Score: ${this.state.score}. Restart?`);
+        this.showAlert(`<b>Game Over</b><br><br>You survived <b>${this.state.time>>0} seconds</b>,<br>killed <b>${this.state.kills} enemies</b> and found <b>${this.state.weapons.length} weapons</b>.<br><br>Score: <b>${this.state.score}</b>.<br><br>Restart?`);
         this.#tryUpdateHighscore();
+        this.state.reset();
+        this.enemySpawner.reset();
+        this.bulletSpawner.reset();
     }
     winGame() {
         this.state.playing = false;
-        alert(`You won! You survived ${this.state.time>>0} seconds, killed ${this.state.kills} enemies and found ${this.state.weapons.length} weapons. Score: ${this.state.score}. Restart?`);
+        this.showAlert(`You won! You survived ${this.state.time>>0} seconds, killed ${this.state.kills} enemies and found ${this.state.weapons.length} weapons. Score: ${this.state.score}. Restart?`);
         this.#tryUpdateHighscore();
+        this.state.reset();
+        this.enemySpawner.reset();
+        this.bulletSpawner.reset();
     }
     #tryUpdateHighscore() {
         if (this.state.score <= this.state.highscore) {
@@ -203,6 +207,17 @@ export default class GameplayController {
             localStorage.setItem("highscore", this.state.highscore);
         } catch (_) {}
 
-        alert("New highscore!");
+        this.showAlert("New highscore!");
     }
+
+    showAlert(text) {
+        this.state.playing = false;
+        alert_text.innerHTML = text;
+        close_alert.addEventListener("click", this.#closeAlert);
+    }
+    #closeAlert = () => {
+        alert_text.innerHTML = "";
+        this.state.playing = true;
+        close_alert.removeEventListener("click", this.#closeAlert);
+    };
 }
