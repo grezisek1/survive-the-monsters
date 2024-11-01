@@ -78,14 +78,22 @@
             height: 100%;
             background: #0003;
             color: #fff;
+            transition: opacity 0.1s linear;
             &:has(#alert_text:empty) {
-                display: none;
+                pointer-events: none;
+                opacity: 0;
             }
         }
         
         #alert_text {
             padding: 16px;
             background: #5559;
+            &:empty {
+                display: none;
+                &~* {
+                    display: none;
+                }
+            }
         }
         #close_alert {
             background: #093;
