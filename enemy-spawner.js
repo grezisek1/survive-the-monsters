@@ -1,16 +1,14 @@
 import {
-    actors,
+    CELL_SIZE,
     enemies,
 } from "./data.js";
 
 export default class EnemySpawner {
     #enemyTypes;
-    #scene;
-    #onPlayerTouch;
-    constructor(enemyTypes, scene, onPlayerTouch) {
+    #grid;
+    constructor(enemyTypes, grid) {
         this.#enemyTypes = enemyTypes;
-        this.#scene = scene;
-        this.#onPlayerTouch = onPlayerTouch;
+        this.#grid = grid;
     }
     spawn(x, y, type) {
         const state = this.#enemyTypes[type].maxHealth;
@@ -19,26 +17,22 @@ export default class EnemySpawner {
             return result;
         }
 
-        const size = this.#enemyTypes[type].size;
-        const radius = size / 2;
+        const gx = Math.floor(x / CELL_SIZE);
+        const gy = Math.floor(y / CELL_SIZE);
+        this.#grid.add(result.id, gx, gy);
 
-        actors.enemies[result.id] = this.#scene.physics.add.sprite(0, 0, `monster_${type}`);
-        actors.enemies[result.id].setName(result.id);
-        actors.enemies[result.id].setCircle(radius, 0, 0);
-        this.#scene.physics.add.collider(actors.player, actors.enemies[result.id], this.#onPlayerTouch);
-        actors.enemies[result.id].setPosition(x, y);
-        actors.enemies[result.id].setVisible(false);
         return result;
     }
 
     despawn(id) {
+        const gx = Math.floor(enemies.data.x[id] / CELL_SIZE);
+        const gy = Math.floor(enemies.data.y[id] / CELL_SIZE);
+
         const result = enemies.remove(id);
-        if (!result.removed) {
-            return result;
+        if (result.removed) {
+            this.#grid.remove(id, gx, gy);
         }
 
-        actors.enemies[id].destroy();
-        actors.enemies[id] = undefined;
         return result;
     }
 }
