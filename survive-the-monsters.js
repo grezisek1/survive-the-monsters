@@ -17,12 +17,15 @@ import {
 
     enemies,
     bullets,
+    PLAYER_SIZE,
 } from "./data.js";
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
 const dt = 1 / PHYSICS_FPS;
 
 const canvas = document.createElement("canvas");
+canvas.width = SCENE_WIDTH;
+canvas.height = SCENE_HEIGHT;
 const ctx = canvas.getContext("2d");
 document.body.appendChild(canvas);
 
@@ -213,7 +216,8 @@ function updatePosition(id, { x, y }, actorGroup) {
 }
 
 function draw() {
-    ctx.drawImage(sprites.player, sceneCenterX, sceneCenterY);
+    ctx.clearRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
+    ctx.drawImage(sprites.player, sceneCenterX - PLAYER_SIZE / 2, sceneCenterY - PLAYER_SIZE / 2);
     enemies.iterate(drawSprite, sprites.enemies);
     bullets.iterate(drawSprite, sprites.bullets);
 }
