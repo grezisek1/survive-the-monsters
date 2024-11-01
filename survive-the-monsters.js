@@ -23,6 +23,8 @@ import {
     MAP_SIZE,
     MAP_BORDER_PX,
     MAP_SIZE_PX,
+    MAP_AREA_START_PX,
+    MAP_AREA_END_PX,
 } from "./data.js";
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
@@ -35,46 +37,15 @@ const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 document.body.appendChild(canvas);
 
-let lastTime = performance.now() - PHYSICS_FPS;
-let timeAcc = 0;
-function loop() {
-    const now = performance.now();
-    timeAcc += now - lastTime;
-    lastTime = now;
-    if (timeAcc >= dt) {
-        update();
-        draw();
-        timeAcc %= dt;
-    }
-    requestAnimationFrame(loop);
-}
-
-const grid = new Grid(CELL_SIZE, MAP_SIZE / 2);
-const enemySpawner = new EnemySpawner(enemyTypes, (_, enemyId) => {
+const enemyGrid = new Grid(MAP_SIZE / 2);
+const enemySpawner = new EnemySpawner(enemyTypes, enemyGrid, (_, enemyId) => {
     controller.hitPlayer(enemyId);
 });
-const bulletSpawner = new BulletSpawner(bulletTypes, (bulletId, enemyId) => {
+const bulletGrid = new Grid(MAP_SIZE / 2);
+const bulletSpawner = new BulletSpawner(bulletTypes, bulletGrid, (bulletId, enemyId) => {
     controller.hitEnemy(bulletId, enemyId);
 });
 const controller = new GameplayController(enemySpawner, bulletSpawner);
-
-function update() {
-    updatePlayerPosition();
-    enemies.iterate(applyTowardsPlayerMovement);
-    bullets.iterate(applyBulletMovement);
-    bullets.iterate(updateBulletState);
-    enemies.iterate(updatePosition);
-    bullets.iterate(updatePosition);
-
-    controller.update();
-}
-
-function updatePlayerPosition() {
-    const x = position[0] + input[0] * playerSpeed;
-    const y = position[1] + input[1] * playerSpeed;
-    position[0] = Math.max(MAP_BORDER_PX, Math.min(x, MAP_SIZE_PX - MAP_BORDER_PX));
-    position[1] = Math.max(MAP_BORDER_PX, Math.min(y, MAP_SIZE_PX - MAP_BORDER_PX));
-}
 
 let inputKeys = {
     up: 0,
@@ -182,19 +153,55 @@ function updateInput() {
     direction[1] = -manY;
 }
 
-function applyBulletMovement(id, { x, y, vx, vy, velocityDamp }) {
+let lastTime = performance.now() - PHYSICS_FPS;
+let timeAcc = 0;
+function loop() {
+    const now = performance.now();
+    timeAcc += now - lastTime;
+    lastTime = now;
+    if (timeAcc >= dt) {
+        update();
+        draw();
+        timeAcc %= dt;
+    }
+    requestAnimationFrame(loop);
+}
+
+function update() {
+    const x = position[0] + input[0] * playerSpeed;
+    const y = position[1] - input[1] * playerSpeed;
+    position[0] = Math.max(MAP_AREA_START_PX, Math.min(x, MAP_AREA_END_PX));
+    position[1] = Math.max(MAP_AREA_START_PX, Math.min(y, MAP_AREA_END_PX));
+
+    enemies.iterate(updateEnemy);
+    bullets.iterate(updateBullet);
+
+    controller.update();
+}
+function updateBullet(id, { x, y, vx, vy, velocityDamp, state, inViewport }) {
+    state[id] -= dt;
+    if (state[id] <= 0) {
+        bulletSpawner.despawn(id);
+        return;
+    }
+
+    const gx = Math.floor(x[id] / CELL_SIZE);
+    const gy = Math.floor(y[id] / CELL_SIZE);
+
     x[id] += vx[id] * dt;
     y[id] += vy[id] * dt;
     vx[id] *= velocityDamp[id];
     vy[id] *= velocityDamp[id];
-}
-function updateBulletState(id, { state }) {
-    state[id] -= dt;
-    if (state[id] <= 0) {
-        bulletSpawner.despawn(id);
+
+    inViewport[id] = Math.abs(x[id] - position[0]) < sceneCenterX && Math.abs(y[id] - position[1]) < sceneCenterY;
+    const gxNew = Math.floor(x[id] / CELL_SIZE);
+    const gyNew = Math.floor(y[id] / CELL_SIZE);
+    if (gx != gxNew || gy != gyNew) {
+        bulletGrid.remove(id, gx, gy);
+        bulletGrid.add(id, gxNew, gyNew);
     }
 }
-function applyTowardsPlayerMovement(id, { x, y }) {
+function updateEnemy(id, { x, y, inViewport }) {
     const manX = position[0] - x[id];
     const manY = position[1] - y[id];
     const eucSq = manX**2 + manY**2;
@@ -212,20 +219,20 @@ function applyTowardsPlayerMovement(id, { x, y }) {
         eigY = manY / euc;
     }
     
+    const gx = Math.floor(x[id] / CELL_SIZE);
+    const gy = Math.floor(y[id] / CELL_SIZE);
     const type = enemies.data.type[id];
     const speed = enemyTypes[type].speed;
     x[id] += eigX * speed;
     y[id] += eigY * speed;
-}
-function updatePosition(id, { x, y, inViewport }) {
-    inViewport[id] = 0;
-    if (Math.abs(x - position[0]) > SCENE_WIDTH) {
-        return;
+
+    inViewport[id] = Math.abs(x[id] - position[0]) < sceneCenterX && Math.abs(y[id] - position[1]) < sceneCenterY;
+    const gxNew = Math.floor(x[id] / CELL_SIZE);
+    const gyNew = Math.floor(y[id] / CELL_SIZE);
+    if (gx != gxNew || gy != gyNew) {
+        enemyGrid.remove(id, gx, gy);
+        enemyGrid.add(id, gxNew, gyNew);
     }
-    if (Math.abs(y - position[1]) > SCENE_HEIGHT) {
-        return;
-    }
-    inViewport[id] = 1;
 }
 
 function draw() {

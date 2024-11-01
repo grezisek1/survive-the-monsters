@@ -11,6 +11,8 @@ export const MAP_BORDER = 16;
 export const MAP_BORDER_PX = CELL_SIZE * MAP_BORDER;
 export const ENEMIES_COUNT_MAX = 2**12;
 export const BULLETS_COUNT_MAX = 2**14;
+export const MAP_AREA_START_PX = MAP_BORDER_PX - MAP_SIZE_PX / 2;
+export const MAP_AREA_END_PX = MAP_SIZE_PX - MAP_BORDER_PX - MAP_SIZE_PX / 2;
 
 export const playerSpeed = 6;
 export const enemyTypes = [

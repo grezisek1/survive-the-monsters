@@ -1,6 +1,5 @@
 export default class Grid {
-    constructor(cellSize, halfSize) {
-        this.cellSize = cellSize;
+    constructor(halfSize) {
         this.halfSize = halfSize;
         this.grid = {};
         for (let gy = -halfSize; gy < halfSize; gy++) {
@@ -10,14 +9,10 @@ export default class Grid {
             }
         }
     }
-    add(val, x, y) {
-        const gx = Math.floor(x / this.cellSize);
-        const gy = Math.floor(y / this.cellSize);
+    add(val, gx, gy) {
         this.grid[gy][gx].push(val);
     }
-    remove(val, x, y) {
-        const gx = Math.floor(x / this.cellSize);
-        const gy = Math.floor(y / this.cellSize);
+    remove(val, gx, gy) {
         if (this.grid[gy][gx].length == 0) {
             return;
         }

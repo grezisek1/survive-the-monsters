@@ -1,15 +1,14 @@
 import {
+    CELL_SIZE,
     enemies,
 } from "./data.js";
 
 export default class EnemySpawner {
     #enemyTypes;
-    #scene;
-    #onPlayerTouch;
-    constructor(enemyTypes, scene, onPlayerTouch) {
+    #grid;
+    constructor(enemyTypes, grid) {
         this.#enemyTypes = enemyTypes;
-        this.#scene = scene;
-        this.#onPlayerTouch = onPlayerTouch;
+        this.#grid = grid;
     }
     spawn(x, y, type) {
         const state = this.#enemyTypes[type].maxHealth;
@@ -18,18 +17,21 @@ export default class EnemySpawner {
             return result;
         }
 
-        // todo add
+        const gx = Math.floor(x / CELL_SIZE);
+        const gy = Math.floor(y / CELL_SIZE);
+        this.#grid.add(result.id, gx, gy);
 
         return result;
     }
 
     despawn(id) {
-        const result = enemies.remove(id);
-        if (!result.removed) {
-            return result;
-        }
+        const gx = Math.floor(enemies.data.x[id] / CELL_SIZE);
+        const gy = Math.floor(enemies.data.y[id] / CELL_SIZE);
 
-        // todo remove
+        const result = enemies.remove(id);
+        if (result.removed) {
+            this.#grid.remove(id, gx, gy);
+        }
 
         return result;
     }
