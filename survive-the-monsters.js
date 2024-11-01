@@ -1,3 +1,4 @@
+import Grid from "./grid.js";
 import EnemySpawner from "./enemy-spawner.js";
 import BulletSpawner from "./bullet-spawner.js";
 import GameplayController from "./gameplay-controller.js";
@@ -18,6 +19,8 @@ import {
     enemies,
     bullets,
     PLAYER_SIZE,
+    CELL_SIZE,
+    MAP_SIZE,
 } from "./data.js";
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
@@ -27,6 +30,7 @@ const canvas = document.createElement("canvas");
 canvas.width = SCENE_WIDTH;
 canvas.height = SCENE_HEIGHT;
 const ctx = canvas.getContext("2d");
+ctx.imageSmoothingEnabled = false;
 document.body.appendChild(canvas);
 
 let lastTime = performance.now() - PHYSICS_FPS;
@@ -43,6 +47,7 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
+const grid = new Grid(CELL_SIZE, MAP_SIZE / 2);
 const enemySpawner = new EnemySpawner(enemyTypes, (_, enemyId) => {
     controller.hitPlayer(enemyId);
 });
@@ -217,7 +222,17 @@ function updatePosition(id, { x, y, inViewport }) {
 
 function draw() {
     ctx.clearRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
-    ctx.drawImage(sprites.player, sceneCenterX - PLAYER_SIZE / 2, sceneCenterY - PLAYER_SIZE / 2);
+    ctx.drawImage(sprites.map,
+        (sprites.map._hx + position[0] - sceneCenterX) / CELL_SIZE,
+        (sprites.map._hy + position[1] - sceneCenterY) / CELL_SIZE,
+        SCENE_WIDTH / CELL_SIZE,
+        SCENE_HEIGHT / CELL_SIZE,
+        0,
+        0,
+        SCENE_WIDTH,
+        SCENE_HEIGHT,
+    );
+    ctx.drawImage(sprites.player, sceneCenterX - sprites.player._hx, sceneCenterY - sprites.player._hy);
     enemies.iterate(drawEnemy);
     bullets.iterate(drawBullet);
 }

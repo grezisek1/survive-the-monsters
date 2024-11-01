@@ -4,6 +4,11 @@ export const PHYSICS_FPS = 60;
 export const SCENE_WIDTH = 1920;
 export const SCENE_HEIGHT = 1080;
 export const PLAYER_SIZE = 128;
+export const CELL_SIZE = 256;
+export const MAP_SIZE = 640;
+export const MAP_SIZE_PX = CELL_SIZE * MAP_SIZE;
+export const MAP_BORDER = 16;
+export const MAP_BORDER_PX = CELL_SIZE * MAP_BORDER;
 export const ENEMIES_COUNT_MAX = 2**12;
 export const BULLETS_COUNT_MAX = 2**14;
 
@@ -106,10 +111,16 @@ export const position = [0, 0];
 
 const sprites = {
     player: new Image(),
+    map: new Image(),
     enemies: [],
     bullets: [],
 };
 sprites.player.src = "sprites/players/player/image.png";
+sprites.player._hx = PLAYER_SIZE / 2;
+sprites.player._hy = PLAYER_SIZE / 2;
+sprites.map.src = "sprites/maps/map_0/image.png";
+sprites.map._hx = MAP_SIZE_PX / 2;
+sprites.map._hy = MAP_SIZE_PX / 2;
 for (let type = 0; type < enemyTypes.length; type++) {
     sprites.enemies[type] = new Image();
     sprites.enemies[type].src = `sprites/monsters/monster_${type}/image.png`;
