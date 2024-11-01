@@ -113,8 +113,8 @@ sprites.player.src = "sprites/players/player/image.png";
 for (let type = 0; type < enemyTypes.length; type++) {
     sprites.enemies[type] = new Image();
     sprites.enemies[type].src = `sprites/monsters/monster_${type}/image.png`;
-    sprites.enemies[type]._hx = sprites.enemies[type].naturalWidth / 2;
-    sprites.enemies[type]._hy = sprites.enemies[type].naturalHeight / 2;
+    sprites.enemies[type]._hx = enemyTypes[type].size / 2;
+    sprites.enemies[type]._hy = enemyTypes[type].size / 2;
 }
 for (let i = 0; i < bulletTypes.length; i++) {
     sprites.bullets[i] = new Image();

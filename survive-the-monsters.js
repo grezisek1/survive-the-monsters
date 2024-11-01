@@ -34,11 +34,13 @@ let timeAcc = 0;
 function loop() {
     const now = performance.now();
     timeAcc += now - lastTime;
-    if (timeAcc >= PHYSICS_FPS) {
+    lastTime = now;
+    if (timeAcc >= dt) {
         update();
         draw();
-        timeAcc %= PHYSICS_FPS;
+        timeAcc %= dt;
     }
+    requestAnimationFrame(loop);
 }
 
 const enemySpawner = new EnemySpawner(enemyTypes, (_, enemyId) => {
@@ -51,12 +53,12 @@ const controller = new GameplayController(enemySpawner, bulletSpawner);
 
 function update() {
     position[0] += input[0] * playerSpeed;
-    position[1] += input[1] * playerSpeed;
+    position[1] -= input[1] * playerSpeed;
     enemies.iterate(applyTowardsPlayerMovement);
     bullets.iterate(applyBulletMovement);
     bullets.iterate(updateBulletState);
-    enemies.iterate(updatePosition, sprites.enemies);
-    bullets.iterate(updatePosition, sprites.bullets);
+    enemies.iterate(updatePosition);
+    bullets.iterate(updatePosition);
 
     controller.update();
 }
@@ -90,7 +92,7 @@ addEventListener("keydown", e => {
     
     case "d":
     case "D":
-        inputKeys.up = 1;
+        inputKeys.right = 1;
         break;
     }
 
@@ -115,7 +117,7 @@ addEventListener("keyup", e => {
     
     case "d":
     case "D":
-        inputKeys.up = 0;
+        inputKeys.right = 0;
         break;
     }
 
@@ -164,7 +166,7 @@ function updateInput() {
     input[0] = eigX;
     input[1] = eigY;
     direction[0] = manX;
-    direction[1] = manY;
+    direction[1] = -manY;
 }
 
 function applyBulletMovement(id, { x, y, vx, vy, velocityDamp }) {
@@ -202,32 +204,40 @@ function applyTowardsPlayerMovement(id, { x, y }) {
     x[id] += eigX * speed;
     y[id] += eigY * speed;
 }
-function updatePosition(id, { x, y }, actorGroup) {
+function updatePosition(id, { x, y, inViewport }) {
+    inViewport[id] = 0;
     if (Math.abs(x - position[0]) > SCENE_WIDTH) {
         return;
     }
     if (Math.abs(y - position[1]) > SCENE_HEIGHT) {
         return;
     }
-    actorGroup[id].setPosition(
-        sceneCenterX - position[0] + x[id],
-        sceneCenterY - position[1] + y[id],
-    );
+    inViewport[id] = 1;
 }
 
 function draw() {
     ctx.clearRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
     ctx.drawImage(sprites.player, sceneCenterX - PLAYER_SIZE / 2, sceneCenterY - PLAYER_SIZE / 2);
-    enemies.iterate(drawSprite, sprites.enemies);
-    bullets.iterate(drawSprite, sprites.bullets);
+    enemies.iterate(drawEnemy);
+    bullets.iterate(drawBullet);
 }
-function drawSprite(id, { x, y, type, inViewport }, sprites) {
+function drawBullet(id, { x, y, type, inViewport }) {
     if (inViewport[id] == 0) {
         return;
     }
-
-    const sprite = sprites[type[id]];
-    ctx.drawImage(sprite, x - sprite._hx, y - sprite._hy);
+    const sprite = sprites.bullets[type[id]];
+    const _x = x[id] + sceneCenterX - sprite._hx - position[0];
+    const _y = y[id] + sceneCenterY - sprite._hy - position[1];
+    ctx.drawImage(sprite, _x, _y);
+}
+function drawEnemy(id, { x, y, type, inViewport }) {
+    if (inViewport[id] == 0) {
+        return;
+    }
+    const sprite = sprites.enemies[type[id]];
+    const _x = x[id] + sceneCenterX - sprite._hx - position[0];
+    const _y = y[id] + sceneCenterY - sprite._hy - position[1];
+    ctx.drawImage(sprite, _x, _y);
 }
 
 controller.start();
