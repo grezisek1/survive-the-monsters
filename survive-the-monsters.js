@@ -4,8 +4,6 @@ import BulletSpawner from "./bullet-spawner.js";
 import GameplayController from "./gameplay-controller.js";
 import {
     PHYSICS_FPS,
-    SCENE_WIDTH,
-    SCENE_HEIGHT,
     playerSpeed,
     enemyTypes,
     bulletTypes,
@@ -20,25 +18,19 @@ import {
     bullets,
     PLAYER_SIZE,
     CELL_SIZE,
-    MAP_SIZE,
-    MAP_BORDER_PX,
-    MAP_SIZE_PX,
-    MAP_AREA_START_PX,
-    MAP_AREA_END_PX,
     gridPos,
 } from "./data.js";
-const sceneCenterX = SCENE_WIDTH / 2;
-const sceneCenterY = SCENE_HEIGHT / 2;
+
+const sceneCenterX = canvas.width / 2;
+const sceneCenterY = canvas.height / 2;
 const dt = 1 / PHYSICS_FPS;
 
-canvas.width = SCENE_WIDTH;
-canvas.height = SCENE_HEIGHT;
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
 
-const enemyGrid = new Grid(MAP_SIZE / 2);
+const enemyGrid = new Grid();
 const enemySpawner = new EnemySpawner(enemyTypes, enemyGrid);
-const bulletGrid = new Grid(MAP_SIZE / 2);
+const bulletGrid = new Grid();
 const bulletSpawner = new BulletSpawner(bulletTypes, bulletGrid);
 const controller = new GameplayController(enemySpawner, bulletSpawner);
 
@@ -163,7 +155,7 @@ function loop() {
 }
 
 function update() {
-    if (!controller.controllerState.playing) {
+    if (!controller.state.playing) {
         return;
     }
 
@@ -176,12 +168,11 @@ function update() {
 function updatePlayer() {
     const x = position[0] + input[0] * playerSpeed;
     const y = position[1] - input[1] * playerSpeed;
-    position[0] = Math.max(MAP_AREA_START_PX, Math.min(x, MAP_AREA_END_PX));
-    position[1] = Math.max(MAP_AREA_START_PX, Math.min(y, MAP_AREA_END_PX));
+    position[0] = Math.max(controller.state.mapAreaStart, Math.min(x, controller.state.mapAreaEnd));
+    position[1] = Math.max(controller.state.mapAreaStart, Math.min(y, controller.state.mapAreaEnd));
     gridPos[0] = Math.floor(position[0] / CELL_SIZE);
     gridPos[1] = Math.floor(position[1] / CELL_SIZE);
-
-    for (let nbhd of enemyGrid.nbhd[gridPos[1]][gridPos[0]]) {
+    for (let nbhd of enemyGrid.nbhd[gridPos[1]]?.[gridPos[0]]) {
         for (let enemyId of nbhd) {
             const enemyType = enemyTypes[enemies.data.type[enemyId]];
             const manX = enemies.data.x[enemyId] - position[0];
@@ -194,36 +185,6 @@ function updatePlayer() {
             controller.hitPlayer(enemyId);
             return;
         }
-    }
-}
-function updateBullet(id, { x, y, vx, vy, velocityDamp, state, inViewport }) {
-    const newState = state[id] - dt;
-    if (newState <= 0) {
-        bulletSpawner.despawn(id);
-        return;
-    }
-    state[id] = newState;
-
-    const gx = Math.floor(x[id] / CELL_SIZE);
-    const gy = Math.floor(y[id] / CELL_SIZE);
-
-    x[id] += vx[id] * dt;
-    if (x[id] < MAP_AREA_START_PX || x[id] > MAP_AREA_END_PX) {
-        bulletSpawner.despawn(id);
-    }
-    y[id] += vy[id] * dt;
-    if (y[id] < MAP_AREA_START_PX || y[id] > MAP_AREA_END_PX) {
-        bulletSpawner.despawn(id);
-    }
-    vx[id] *= velocityDamp[id];
-    vy[id] *= velocityDamp[id];
-
-    inViewport[id] = Math.abs(x[id] - position[0]) < sceneCenterX && Math.abs(y[id] - position[1]) < sceneCenterY;
-    const gxNew = Math.floor(x[id] / CELL_SIZE);
-    const gyNew = Math.floor(y[id] / CELL_SIZE);
-    if (gx != gxNew || gy != gyNew) {
-        bulletGrid.remove(id, gx, gy);
-        bulletGrid.add(id, gxNew, gyNew);
     }
 }
 function updateEnemy(id, { x, y, inViewport }) {
@@ -250,8 +211,8 @@ function updateEnemy(id, { x, y, inViewport }) {
     const speed = enemyTypes[type].speed;
     x[id] += eigX * speed;
     y[id] += eigY * speed;
-    x[id] = Math.max(MAP_AREA_START_PX, Math.min(x[id], MAP_AREA_END_PX));
-    y[id] = Math.max(MAP_AREA_START_PX, Math.min(y[id], MAP_AREA_END_PX));
+    x[id] = Math.max(controller.state.mapAreaStart, Math.min(x[id], controller.state.mapAreaEnd));
+    y[id] = Math.max(controller.state.mapAreaStart, Math.min(y[id], controller.state.mapAreaEnd));
 
     inViewport[id] = Math.abs(x[id] - position[0]) < sceneCenterX && Math.abs(y[id] - position[1]) < sceneCenterY;
     const gxNew = Math.floor(x[id] / CELL_SIZE);
@@ -275,18 +236,48 @@ function updateEnemy(id, { x, y, inViewport }) {
         }
     }
 }
+function updateBullet(id, { x, y, vx, vy, velocityDamp, state, inViewport }) {
+    const newState = state[id] - dt;
+    if (newState <= 0) {
+        bulletSpawner.despawn(id);
+        return;
+    }
+    state[id] = newState;
+
+    const gx = Math.floor(x[id] / CELL_SIZE);
+    const gy = Math.floor(y[id] / CELL_SIZE);
+
+    x[id] += vx[id] * dt;
+    if (x[id] < controller.state.mapAreaStart || x[id] > controller.state.mapAreaEnd) {
+        bulletSpawner.despawn(id);
+    }
+    y[id] += vy[id] * dt;
+    if (y[id] < controller.state.mapAreaStart || y[id] > controller.state.mapAreaEnd) {
+        bulletSpawner.despawn(id);
+    }
+    vx[id] *= velocityDamp[id];
+    vy[id] *= velocityDamp[id];
+
+    inViewport[id] = Math.abs(x[id] - position[0]) < sceneCenterX && Math.abs(y[id] - position[1]) < sceneCenterY;
+    const gxNew = Math.floor(x[id] / CELL_SIZE);
+    const gyNew = Math.floor(y[id] / CELL_SIZE);
+    if (gx != gxNew || gy != gyNew) {
+        bulletGrid.remove(id, gx, gy);
+        bulletGrid.add(id, gxNew, gyNew);
+    }
+}
 
 function draw() {
-    ctx.clearRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT);
-    ctx.drawImage(sprites.map,
-        (sprites.map._hx + position[0] - sceneCenterX) / CELL_SIZE,
-        (sprites.map._hy + position[1] - sceneCenterY) / CELL_SIZE,
-        SCENE_WIDTH / CELL_SIZE,
-        SCENE_HEIGHT / CELL_SIZE,
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(map,
+        map.width / 2 + (position[0] - sceneCenterX) / CELL_SIZE,
+        map.height / 2 + (position[1] - sceneCenterY) / CELL_SIZE,
+        canvas.width / CELL_SIZE,
+        canvas.height / CELL_SIZE,
         0,
         0,
-        SCENE_WIDTH,
-        SCENE_HEIGHT,
+        canvas.width,
+        canvas.height,
     );
     ctx.drawImage(sprites.player, sceneCenterX - sprites.player._hx, sceneCenterY - sprites.player._hy);
     enemies.iterate(drawEnemy);
@@ -311,5 +302,5 @@ function drawEnemy(id, { x, y, type, inViewport }) {
     ctx.drawImage(sprite, _x, _y);
 }
 
-controller.start();
+controller.start(0);
 requestAnimationFrame(loop);

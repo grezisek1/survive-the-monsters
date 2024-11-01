@@ -35,4 +35,7 @@ export default class EnemySpawner {
 
         return result;
     }
+    reset() {
+        this.#grid.reset(map.width / 2, map.height / 2);
+    }
 }

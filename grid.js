@@ -4,29 +4,6 @@ export default class Grid {
         [-1, 0], [0, 0] , [1, 0],
         [-1, 1], [0, 1], [1, 1],
     ];
-    constructor(halfSize) {
-        this.halfSize = halfSize;
-        this.grid = {};
-        this.nbhd = {};
-        for (let gy = -halfSize; gy < halfSize; gy++) {
-            this.grid[gy] = {};
-            this.nbhd[gy] = {};
-            for (let gx = -halfSize; gx < halfSize; gx++) {
-                this.grid[gy][gx] = [];
-                this.nbhd[gy][gx] = [];
-            }
-        }
-        for (let gy = -halfSize; gy < halfSize; gy++) {
-            for (let gx = -halfSize; gx < halfSize; gx++) {
-                for (let [ox, oy] of Grid.nbhdOffsets) {
-                    if (!this.grid[gy+oy]?.[gx+ox]) {
-                        continue;
-                    }
-                    this.nbhd[gy][gx].push(this.grid[gy+oy][gx+ox]);
-                }
-            }
-        }
-    }
     add(val, gx, gy) {
         this.grid[gy][gx].push(val);
     }
@@ -40,8 +17,8 @@ export default class Grid {
         }
     }
     iterate(callback, arg) {
-        for (let gy = -halfSize; gy < halfSize; gy++) {
-            for (let gx = -halfSize; gx < halfSize; gx++) {
+        for (let gy = -this.halfY; gy < this.halfY; gy++) {
+            for (let gx = -this.halfX; gx < this.halfX; gx++) {
                 const cell = this.grid[gy][gx];
                 for (let gi = 0; gi < cell.length; gi++) {
                     callback(gx, gy, gi, cell, cell[gi], arg);
@@ -50,16 +27,42 @@ export default class Grid {
         }
     }
     iterateCells(callback, arg) {
-        for (let gy = -halfSize; gy < halfSize; gy++) {
-            for (let gx = -halfSize; gx < halfSize; gx++) {
+        for (let gy = -this.halfY; gy < this.halfY; gy++) {
+            for (let gx = -this.halfX; gx < this.halfX; gx++) {
                 callback(gx, gy, cell, arg);
             }
         }
     }
-    reset() {
-        for (let gy = -halfSize; gy < halfSize; gy++) {
-            for (let gx = -halfSize; gx < halfSize; gx++) {
-                this.grid[gy][gx].length = 0;
+    reset(halfX, halfY) {
+        if (!this.grid) {
+            this.grid = {};
+            this.nbhd = {};
+        }
+        this.halfX = halfX;
+        this.halfY = halfY;
+        for (let gy = -halfY; gy < halfY; gy++) {
+            if (this.grid[gy]) {
+                for (let gx = -halfX; gx < halfX; gx++) {
+                    this.grid[gy][gx].length = 0;
+                    this.nbhd[gy][gx].length = 0;
+                }
+            } else {
+                this.grid[gy] = {};
+                this.nbhd[gy] = {};
+                for (let gx = -halfX; gx < halfX; gx++) {
+                    this.grid[gy][gx] = [];
+                    this.nbhd[gy][gx] = [];
+                }
+            }
+        }
+        for (let gy = -halfY; gy < halfY; gy++) {
+            for (let gx = -halfX; gx < halfX; gx++) {
+                for (let [ox, oy] of Grid.nbhdOffsets) {
+                    if (!this.grid[gy+oy]?.[gx+ox]) {
+                        continue;
+                    }
+                    this.nbhd[gy][gx].push(this.grid[gy+oy][gx+ox]);
+                }
             }
         }
     }

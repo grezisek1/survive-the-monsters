@@ -1,7 +1,5 @@
 import {
     PHYSICS_FPS,
-    SCENE_WIDTH,
-    SCENE_HEIGHT,
     ENEMIES_COUNT_MAX,
     BULLETS_COUNT_MAX,
     bulletTypes,
@@ -14,85 +12,107 @@ import {
     progressMilestonesSpawnIntervals,
     progressMilestonesWeaponChance,
     gridPos,
+    MAP_BORDER_PX,
+    CELL_SIZE,
+    MAP_BORDER,
 } from "./data.js";
-const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT) / 2;
+const spawnRadius = Math.max(canvas.width, canvas.height) / 2;
 const dt = 1 / PHYSICS_FPS;
 
+class State {
+    reset() {
+        direction[0] = 1;
+        direction[1] = 0;
+        position[0] = 0;
+        position[1] = 0;
+        gridPos[0] = 0;
+        gridPos[1] = 0;
+
+        this.enemySpawnTimeAcc = 0;
+        this.bulletSpawnTimeAcc = [0];
+        this.playing = false;
+        this.weaponSpawnedInMilestone = false;
+        this.time = 0;
+        this.kills = 0;
+        this.milestone = 0;
+        this.weapons = [0];
+        this.score = 0;
+        try {
+            this.highscore = Number(localStorage.getItem("highscore"));
+        } catch (_) {}
+    }
+}
 export default class GameplayController {
     constructor(enemySpawner, bulletSpawner) {
         this.enemySpawner = enemySpawner;
         this.bulletSpawner = bulletSpawner;
-        this.gameProgressState = {
-            time: 0,
-            kills: 0,
-            milestone: 0,
-            weapons: [0],
-            score: 0,
-        };
-        this.controllerState = {
-            enemySpawnTimeAcc: 0,
-            bulletSpawnTimeAcc: [0],
-            playing: false,
-            weaponSpawnedInMilestone: false,
-        };
+        this.state = new State();
     }
 
-    start() {
-        this.#resetState();
-        this.controllerState.playing = true;
+    start(mapId = 0) {
+        this.state.reset();
+        map.addEventListener("load", this.#mapLoaded);
+        map.src = `./sprites/maps/map_${mapId}/image.png`;
     }
+    #mapLoaded = () => {
+        map.removeEventListener("load", this.#mapLoaded);
+        setTimeout(() => {
+            this.state.mapAreaStart = (MAP_BORDER - map.width / 2) * CELL_SIZE;
+            this.state.mapAreaEnd = (map.width - MAP_BORDER - map.width / 2) * CELL_SIZE;
+            this.enemySpawner.reset();
+            this.bulletSpawner.reset();
+            this.state.playing = true;
+        }, 50);
+    };
+    
 
     update() {
-        if (!this.controllerState.playing) {
+        if (!this.state.playing) {
             return;
         }
 
-        addWeapon: if (!this.controllerState.weaponSpawnedInMilestone) {
-            const rand = Math.random();
-            if (rand > progressMilestonesWeaponChance[this.gameProgressState.milestone]) {
-                break addWeapon;
-            }
-
-            const typeIndex = Math.floor(Math.random() * bulletTypes.length);
-            this.gameProgressState.weapons.push(typeIndex);
-            this.controllerState.bulletSpawnTimeAcc.push(0);
-            this.controllerState.weaponSpawnedInMilestone = true;
-            alert(`You found ${bulletTypes[typeIndex].name}`)
+        if (!this.state.weaponSpawnedInMilestone) {
+            this.#tryAddWeapon();
         }
         
-        this.controllerState.enemySpawnTimeAcc += dt;
-        const spawnInterval = progressMilestonesSpawnIntervals[this.gameProgressState.milestone];
-        if (this.controllerState.enemySpawnTimeAcc > spawnInterval) {
-            this.controllerState.enemySpawnTimeAcc %= spawnInterval;
-            this.#spawnEnemy();
-        }
+        this.#trySpawnEnemy();
+        this.#spawnBullets();
 
-        const weaponCount = this.gameProgressState.weapons.length;
-        for (let weaponIndex = 0; weaponIndex < weaponCount; weaponIndex++) {
-            const weaponId = this.gameProgressState.weapons[weaponIndex];
-            const reloadTime = bulletTypes[weaponId].reloadTime;
-            this.controllerState.bulletSpawnTimeAcc[weaponIndex] += dt;
-            if (this.controllerState.bulletSpawnTimeAcc[weaponIndex] > reloadTime) {
-                this.controllerState.bulletSpawnTimeAcc[weaponIndex] %= reloadTime;
-                this.#spawnBullet(weaponId);
-            }
-        }
-
-        this.gameProgressState.time += dt;
+        this.state.time += dt;
         
-        const nextMilestone = this.gameProgressState.milestone + 1;
+        const nextMilestone = this.state.milestone + 1;
         if (nextMilestone == progressMilestones.length) {
             this.winGame();
             return;
         }
 
         const nextMilestoneTime = progressMilestones[nextMilestone];
-        if (this.gameProgressState.time > nextMilestoneTime) {
-            this.gameProgressState.milestone = nextMilestone;
-            this.controllerState.weaponSpawnedInMilestone = false;
+        if (this.state.time > nextMilestoneTime) {
+            this.state.milestone = nextMilestone;
+            this.state.weaponSpawnedInMilestone = false;
         }
     }
-    #spawnEnemy() {
+    #tryAddWeapon() {
+        if (Math.random() > progressMilestonesWeaponChance[this.state.milestone]) {
+            return;
+        }
+
+        const typeIndex = Math.floor(Math.random() * bulletTypes.length);
+        this.state.weapons.push(typeIndex);
+        this.state.bulletSpawnTimeAcc.push(0);
+        this.state.weaponSpawnedInMilestone = true;
+
+        alert(`You found ${bulletTypes[typeIndex].name}`);
+    }
+    #trySpawnEnemy() {
+        this.state.enemySpawnTimeAcc += dt;
+        const spawnInterval = progressMilestonesSpawnIntervals[this.state.milestone];
+        if (this.state.enemySpawnTimeAcc < spawnInterval) {
+            return;
+        }
+        
+        this.state.enemySpawnTimeAcc %= spawnInterval;
+
         const dir = [Math.random() - 0.5, Math.random() - 0.5];
         const mSq = dir[0]**2 + dir[1]**2;
         let x;
@@ -106,32 +126,40 @@ export default class GameplayController {
             y = dir[1] * spawnRadius / m;
         }
         
-        const enemyTypes = progressMilestonesEnemies[this.gameProgressState.milestone];
+        const enemyTypes = progressMilestonesEnemies[this.state.milestone];
         const typeIndex = Math.floor(Math.random() * enemyTypes.length);
         this.enemySpawner.spawn(x, y, enemyTypes[typeIndex]);
 
-        this.gameProgressState.score += typeIndex;
+        this.state.score += typeIndex;
     }
-    #spawnBullet(weaponId) {
-        this.bulletSpawner.spawn(weaponId);
-        this.gameProgressState.score++;
-    }
+    #spawnBullets() {
+        const weaponCount = this.state.weapons.length;
+        for (let weaponIndex = 0; weaponIndex < weaponCount; weaponIndex++) {
+            this.state.bulletSpawnTimeAcc[weaponIndex] += dt;
 
-    end() {
-        this.controllerState.playing = false;
+            const weaponId = this.state.weapons[weaponIndex];
+            const reloadTime = bulletTypes[weaponId].reloadTime;
+            if (this.state.bulletSpawnTimeAcc[weaponIndex] < reloadTime) {
+                continue;
+            }
+            this.state.bulletSpawnTimeAcc[weaponIndex] %= reloadTime;
+            
+            this.bulletSpawner.spawn(weaponId);
+            this.state.score++;
+        }
     }
 
     hitEnemy(bulletId, enemyId) {
-        this.gameProgressState.score++;
+        this.state.score++;
         const type = bullets.data.type[bulletId];
         const damage = bulletTypes[type].damage;
-        this.gameProgressState.score += bulletTypes[type].damage;
+        this.state.score += bulletTypes[type].damage;
         enemies.data.state[enemyId] = Math.max(0, enemies.data.state[enemyId] - damage);
         this.bulletSpawner.despawn(bulletId);
         if (enemies.data.state[enemyId] == 0) {
             this.enemySpawner.despawn(enemyId);
-            this.gameProgressState.kills++;
-            this.gameProgressState.score += enemyId * 10;
+            this.state.kills++;
+            this.state.score += enemyId * 10;
         }
     }
     hitPlayer(bulletId) {
@@ -139,51 +167,25 @@ export default class GameplayController {
     }
 
     loseGame() {
-        this.end();
-        this.#updateHighscore();
-        alert(`Game Over. You survived ${this.gameProgressState.time>>0} seconds, killed ${this.gameProgressState.kills} enemies and found ${this.gameProgressState.weapons.length} weapons. Score: ${this.gameProgressState.score}. Restart?`);
-        this.#resetState();
-        this.start();
+        this.state.playing = false;
+        alert(`Game Over. You survived ${this.state.time>>0} seconds, killed ${this.state.kills} enemies and found ${this.state.weapons.length} weapons. Score: ${this.state.score}. Restart?`);
+        this.#tryUpdateHighscore();
     }
     winGame() {
-        this.end();
-        this.#updateHighscore();
-        alert(`You won! You survived ${this.gameProgressState.time>>0} seconds, killed ${this.gameProgressState.kills} enemies and found ${this.gameProgressState.weapons.length} weapons. Score: ${this.gameProgressState.score}. Restart?`);
-        this.#resetState();
-        this.start();
+        this.state.playing = false;
+        alert(`You won! You survived ${this.state.time>>0} seconds, killed ${this.state.kills} enemies and found ${this.state.weapons.length} weapons. Score: ${this.state.score}. Restart?`);
+        this.#tryUpdateHighscore();
     }
-    #updateHighscore() {
-        if (this.gameProgressState.score > this.gameProgressState.highscore) {
-            this.gameProgressState.highscore = this.gameProgressState.score;
-            alert("New highscore!");
+    #tryUpdateHighscore() {
+        if (this.state.score <= this.state.highscore) {
+            return;
         }
-
+        
+        this.state.highscore = this.state.score;
         try {
-            localStorage.setItem("highscore", this.gameProgressState.highscore);
+            localStorage.setItem("highscore", this.state.highscore);
         } catch (_) {}
-    }
-    #resetState() {
-        enemies.reset();
-        bullets.reset();
 
-        this.gameProgressState.time = 0;
-        this.gameProgressState.kills = 0;
-        this.gameProgressState.milestone = 0;
-        this.gameProgressState.weapons = [0];
-        this.gameProgressState.score = 0;
-        try {
-            this.gameProgressState.highscore = Number(localStorage.getItem("highscore"));
-        } catch (_) {}
-        this.controllerState.enemySpawnTimeAcc = 0;
-        this.controllerState.bulletSpawnTimeAcc = [0];
-        this.controllerState.playing = false;
-        this.controllerState.weaponSpawnedInMilestone = false;
-
-        direction[0] = 1;
-        direction[1] = 0;
-        position[0] = 0;
-        position[1] = 0;
-        gridPos[0] = 0;
-        gridPos[1] = 0;
+        alert("New highscore!");
     }
 }
