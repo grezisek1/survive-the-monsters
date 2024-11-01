@@ -6,15 +6,39 @@
     <title>Survive the monsters!</title>
     <style>
         body {
-            display: grid;
-            grid-template-columns: 100%;
-            grid-template-rows: 100%;
-            margin: 0;
+            --minimap-scale: 0.5;
+            --minimap-x: 0px;
+            --minimap-y: 0px;
+            --minimap-w: -10px;
+            --minimap-h: -10px;
             height: 100vh;
-            > * {
-                grid-column: 1/-1;
-                grid-row: 1/-1;
+            margin: 0;
+            overflow: hidden;
+            &::before {
+                content: "";
+                position: absolute;
+                bottom: -2px;
+                right: -2px;
+                display: block;
+                width: 4px;
+                height: 4px;
+                place-self: end;
+                background: lime;
+                opacity: 0.5;
+                transform: translate(
+                    calc((var(--minimap-x) - var(--minimap-w) / 2) * var(--minimap-scale)),
+                    calc((var(--minimap-y) - var(--minimap-h) / 2) * var(--minimap-scale))
+                );
+                z-index: 1;
             }
+        }
+        #map {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            transform: scale(var(--minimap-scale));
+            transform-origin: bottom right;
+            opacity: 0.4;
         }
         #canvas {
             width: 100%;
@@ -24,16 +48,33 @@
             object-fit: contain;
             background: black;
         }
-        #map {
+        #highscore {
             position: absolute;
-            left: -300vw;
+            bottom: 0;
+            right: 0;
+            background: black;
+            color: gold;
+            font-family: monospace;
+            z-index: 1;
+        }
+        #score {
+            position: absolute;
+            top: calc(100% - var(--minimap-h) * var(--minimap-scale));
+            left: calc(100% - var(--minimap-w) * var(--minimap-scale));
+            background: black;
+            color: lime;
+            font-family: monospace;
+            z-index: 1;
         }
     </style>
 </head>
 <body>
-    <img id="map" alt="" hidden>
     <canvas id="canvas" width="1920" height="1080"></canvas>
-
+    <div id="ui">
+        <span id="highscore">0</span>
+        <span id="score">0</span>
+        <img id="map" alt="">
+    </div>
     <script type="module" src="./survive-the-monsters.js"></script>
 </body>
 </html>

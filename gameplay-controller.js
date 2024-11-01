@@ -37,6 +37,7 @@ class State {
         this.milestone = 0;
         this.weapons = [0];
         this.score = 0;
+        this.highscore = 0;
         try {
             this.highscore = Number(localStorage.getItem("highscore"));
         } catch (_) {}
@@ -53,12 +54,17 @@ export default class GameplayController {
         this.state.reset();
         map.addEventListener("load", this.#mapLoaded);
         map.src = `./sprites/maps/map_${mapId}/image.png`;
+        highscore.innerHTML = this.state.highscore;
     }
     #mapLoaded = () => {
         map.removeEventListener("load", this.#mapLoaded);
         setTimeout(() => {
             this.state.mapAreaStart = (MAP_BORDER - map.width / 2) * CELL_SIZE;
             this.state.mapAreaEnd = (map.width - MAP_BORDER - map.width / 2) * CELL_SIZE;
+            document.body.style.setProperty("--minimap-w", `${map.width}px`);
+            document.body.style.setProperty("--minimap-h", `${map.height}px`);
+            document.body.style.setProperty("--minimap-x", "0px");
+            document.body.style.setProperty("--minimap-y", "0px");
             this.enemySpawner.reset();
             this.bulletSpawner.reset();
             this.state.playing = true;
@@ -130,7 +136,7 @@ export default class GameplayController {
         const typeIndex = Math.floor(Math.random() * enemyTypes.length);
         this.enemySpawner.spawn(x, y, enemyTypes[typeIndex]);
 
-        this.state.score += typeIndex;
+        this.#increaseScore(typeIndex);
     }
     #spawnBullets() {
         const weaponCount = this.state.weapons.length;
@@ -145,25 +151,33 @@ export default class GameplayController {
             this.state.bulletSpawnTimeAcc[weaponIndex] %= reloadTime;
             
             this.bulletSpawner.spawn(weaponId);
-            this.state.score++;
+            this.#increaseScore(1);
         }
     }
 
     hitEnemy(bulletId, enemyId) {
-        this.state.score++;
+        this.#increaseScore(1);
         const type = bullets.data.type[bulletId];
         const damage = bulletTypes[type].damage;
-        this.state.score += bulletTypes[type].damage;
+        this.#increaseScore(bulletTypes[type].damage);
         enemies.data.state[enemyId] = Math.max(0, enemies.data.state[enemyId] - damage);
         this.bulletSpawner.despawn(bulletId);
         if (enemies.data.state[enemyId] == 0) {
             this.enemySpawner.despawn(enemyId);
             this.state.kills++;
-            this.state.score += enemyId * 10;
+            this.#increaseScore(enemyId * 10);
         }
     }
     hitPlayer(bulletId) {
         this.loseGame();
+    }
+
+    #increaseScore(val) {
+        this.state.score += val;
+        score.innerHTML = this.state.score;
+        if (this.state.score > this.state.highscore) {
+            highscore.innerHTML = this.state.score;
+        }
     }
 
     loseGame() {

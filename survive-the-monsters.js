@@ -172,6 +172,8 @@ function updatePlayer() {
     position[1] = Math.max(controller.state.mapAreaStart, Math.min(y, controller.state.mapAreaEnd));
     gridPos[0] = Math.floor(position[0] / CELL_SIZE);
     gridPos[1] = Math.floor(position[1] / CELL_SIZE);
+    document.body.style.setProperty("--minimap-x", `${gridPos[0]}px`);
+    document.body.style.setProperty("--minimap-y", `${gridPos[1]}px`);
     for (let nbhd of enemyGrid.nbhd[gridPos[1]]?.[gridPos[0]]) {
         for (let enemyId of nbhd) {
             const enemyType = enemyTypes[enemies.data.type[enemyId]];
