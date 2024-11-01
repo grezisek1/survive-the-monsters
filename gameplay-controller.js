@@ -132,6 +132,9 @@ export default class GameplayController {
             y = dir[1] * spawnRadius / m;
         }
         
+        x += position[0]
+        y += position[1];
+
         const enemyTypes = progressMilestonesEnemies[this.state.milestone];
         const typeIndex = Math.floor(Math.random() * enemyTypes.length);
         this.enemySpawner.spawn(x, y, enemyTypes[typeIndex]);
