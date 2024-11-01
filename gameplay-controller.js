@@ -138,12 +138,14 @@ export default class GameplayController {
     }
 
     loseGame() {
+        this.end();
         this.#updateHighscore();
         alert(`Game Over. You survived ${this.gameProgressState.time>>0} seconds, killed ${this.gameProgressState.kills} enemies and found ${this.gameProgressState.weapons.length} weapons. Score: ${this.gameProgressState.score}. Restart?`);
         this.#resetState();
         this.start();
     }
     winGame() {
+        this.end();
         this.#updateHighscore();
         alert(`You won! You survived ${this.gameProgressState.time>>0} seconds, killed ${this.gameProgressState.kills} enemies and found ${this.gameProgressState.weapons.length} weapons. Score: ${this.gameProgressState.score}. Restart?`);
         this.#resetState();

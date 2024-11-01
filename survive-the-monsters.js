@@ -25,6 +25,7 @@ import {
     MAP_SIZE_PX,
     MAP_AREA_START_PX,
     MAP_AREA_END_PX,
+    gridPos,
 } from "./data.js";
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
@@ -38,13 +39,9 @@ ctx.imageSmoothingEnabled = false;
 document.body.appendChild(canvas);
 
 const enemyGrid = new Grid(MAP_SIZE / 2);
-const enemySpawner = new EnemySpawner(enemyTypes, enemyGrid, (_, enemyId) => {
-    controller.hitPlayer(enemyId);
-});
+const enemySpawner = new EnemySpawner(enemyTypes, enemyGrid);
 const bulletGrid = new Grid(MAP_SIZE / 2);
-const bulletSpawner = new BulletSpawner(bulletTypes, bulletGrid, (bulletId, enemyId) => {
-    controller.hitEnemy(bulletId, enemyId);
-});
+const bulletSpawner = new BulletSpawner(bulletTypes, bulletGrid);
 const controller = new GameplayController(enemySpawner, bulletSpawner);
 
 let inputKeys = {
@@ -168,28 +165,58 @@ function loop() {
 }
 
 function update() {
-    const x = position[0] + input[0] * playerSpeed;
-    const y = position[1] - input[1] * playerSpeed;
-    position[0] = Math.max(MAP_AREA_START_PX, Math.min(x, MAP_AREA_END_PX));
-    position[1] = Math.max(MAP_AREA_START_PX, Math.min(y, MAP_AREA_END_PX));
+    if (!controller.controllerState.playing) {
+        return;
+    }
 
+    updatePlayer();
     enemies.iterate(updateEnemy);
     bullets.iterate(updateBullet);
 
     controller.update();
 }
+function updatePlayer() {
+    const x = position[0] + input[0] * playerSpeed;
+    const y = position[1] - input[1] * playerSpeed;
+    position[0] = Math.max(MAP_AREA_START_PX, Math.min(x, MAP_AREA_END_PX));
+    position[1] = Math.max(MAP_AREA_START_PX, Math.min(y, MAP_AREA_END_PX));
+    gridPos[0] = Math.floor(position[0] / CELL_SIZE);
+    gridPos[1] = Math.floor(position[1] / CELL_SIZE);
+
+    for (let nbhd of enemyGrid.nbhd[gridPos[1]][gridPos[0]]) {
+        for (let enemyId of nbhd) {
+            const enemyType = enemyTypes[enemies.data.type[enemyId]];
+            const manX = enemies.data.x[enemyId] - position[0];
+            const manY = enemies.data.y[enemyId] - position[1];
+            const eucSq = manX**2 + manY**2;
+            if (eucSq > (PLAYER_SIZE / 2 + enemyType.radius)**2) {
+                continue;
+            }
+
+            controller.hitPlayer(enemyId);
+            return;
+        }
+    }
+}
 function updateBullet(id, { x, y, vx, vy, velocityDamp, state, inViewport }) {
-    state[id] -= dt;
-    if (state[id] <= 0) {
+    const newState = state[id] - dt;
+    if (newState <= 0) {
         bulletSpawner.despawn(id);
         return;
     }
+    state[id] = newState;
 
     const gx = Math.floor(x[id] / CELL_SIZE);
     const gy = Math.floor(y[id] / CELL_SIZE);
 
     x[id] += vx[id] * dt;
+    if (x[id] < MAP_AREA_START_PX || x[id] > MAP_AREA_END_PX) {
+        bulletSpawner.despawn(id);
+    }
     y[id] += vy[id] * dt;
+    if (y[id] < MAP_AREA_START_PX || y[id] > MAP_AREA_END_PX) {
+        bulletSpawner.despawn(id);
+    }
     vx[id] *= velocityDamp[id];
     vy[id] *= velocityDamp[id];
 
@@ -225,6 +252,8 @@ function updateEnemy(id, { x, y, inViewport }) {
     const speed = enemyTypes[type].speed;
     x[id] += eigX * speed;
     y[id] += eigY * speed;
+    x[id] = Math.max(MAP_AREA_START_PX, Math.min(x[id], MAP_AREA_END_PX));
+    y[id] = Math.max(MAP_AREA_START_PX, Math.min(y[id], MAP_AREA_END_PX));
 
     inViewport[id] = Math.abs(x[id] - position[0]) < sceneCenterX && Math.abs(y[id] - position[1]) < sceneCenterY;
     const gxNew = Math.floor(x[id] / CELL_SIZE);
@@ -232,6 +261,20 @@ function updateEnemy(id, { x, y, inViewport }) {
     if (gx != gxNew || gy != gyNew) {
         enemyGrid.remove(id, gx, gy);
         enemyGrid.add(id, gxNew, gyNew);
+    }
+
+    for (let nbhd of bulletGrid.nbhd[gyNew][gxNew]) {
+        for (let bulletId of nbhd) {
+            const bulletType = bulletTypes[bullets.data.type[bulletId]];
+            const manX = bullets.data.x[bulletId] - x[id];
+            const manY = bullets.data.y[bulletId] - y[id];
+            const eucSq = manX**2 + manY**2;
+            if (eucSq > (bulletType.radius + enemyTypes[type].radius)**2) {
+                continue;
+            }
+
+            controller.hitEnemy(bulletId, id);
+        }
     }
 }
 

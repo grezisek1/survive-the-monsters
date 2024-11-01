@@ -19,52 +19,62 @@ export const enemyTypes = [
     {
         maxHealth: 1,
         size: 128,
+        radius: 128/2,
         speed: 1,
     },
     {
         maxHealth: 2,
         size: 128,
+        radius: 128/2,
         speed: 2,
     },
     {
         maxHealth: 8,
         size: 64,
+        radius: 64/2,
         speed: 3.2,
     },
     {
         maxHealth: 12,
         size: 64,
+        radius: 64/2,
         speed: 3.2,
     },
     {
         maxHealth: 32,
         size: 64,
+        radius: 64/2,
         speed: 4,
     },
 
     {
         maxHealth: 1,
         size: 48,
+        radius: 48/2,
         speed: 6,
     },
     {
         maxHealth: 128,
         size: 32,
+        radius: 32/2,
         speed: 2,
     },
     {
         maxHealth: 4,
         size: 32,
+        radius: 32/2,
         speed: 8,
     },
     {
         maxHealth: 1,
         size: 4,
+        radius: 4/2,
         speed: 0.2,
     },
     {
         maxHealth: 99999,
         size: 216,
+        radius: 216/2,
         speed: 6,
     },
 ];
@@ -77,6 +87,7 @@ export const bulletTypes = [
         despawnTime: 2,
         damage: 1,
         size: 16,
+        radius: (16/2),
     },
     {
         name: "cannon",
@@ -86,6 +97,7 @@ export const bulletTypes = [
         despawnTime: 32,
         damage: 8,
         size: 128,
+        radius: 128/2,
     },
     {
         name: "pink mine",
@@ -95,6 +107,7 @@ export const bulletTypes = [
         despawnTime: 600,
         damage: 3,
         size: 32,
+        radius: 32/2,
     },
     {
         name: "accel",
@@ -104,12 +117,14 @@ export const bulletTypes = [
         despawnTime: 32,
         damage: 12,
         size: 128,
+        radius: 128/2,
     },
 ];
 
 export const input = [0, 0];
 export const direction = [1, 0];
 export const position = [0, 0];
+export const gridPos = [0, 0];
 
 const sprites = {
     player: new Image(),
@@ -126,14 +141,14 @@ sprites.map._hy = MAP_SIZE_PX / 2;
 for (let type = 0; type < enemyTypes.length; type++) {
     sprites.enemies[type] = new Image();
     sprites.enemies[type].src = `sprites/monsters/monster_${type}/image.png`;
-    sprites.enemies[type]._hx = enemyTypes[type].size / 2;
-    sprites.enemies[type]._hy = enemyTypes[type].size / 2;
+    sprites.enemies[type]._hx = enemyTypes[type].radius;
+    sprites.enemies[type]._hy = enemyTypes[type].radius;
 }
-for (let i = 0; i < bulletTypes.length; i++) {
-    sprites.bullets[i] = new Image();
-    sprites.bullets[i].src = `sprites/bullets/bullet_${i}/image.png`;
-    sprites.bullets[i]._hx = sprites.bullets[i].naturalWidth / 2;
-    sprites.bullets[i]._hy = sprites.bullets[i].naturalHeight / 2;
+for (let type = 0; type < bulletTypes.length; type++) {
+    sprites.bullets[type] = new Image();
+    sprites.bullets[type].src = `sprites/bullets/bullet_${type}/image.png`;
+    sprites.bullets[type]._hx = bulletTypes[type].radius;
+    sprites.bullets[type]._hy = bulletTypes[type].radius;
 }
 export { sprites };
 

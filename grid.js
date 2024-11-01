@@ -1,11 +1,29 @@
 export default class Grid {
+    static nbhdOffsets = [
+        [-1, -1], [0, -1], [1, -1],
+        [-1, 0], [0, 0] , [1, 0],
+        [-1, 1], [0, 1], [1, 1],
+    ];
     constructor(halfSize) {
         this.halfSize = halfSize;
         this.grid = {};
+        this.nbhd = {};
         for (let gy = -halfSize; gy < halfSize; gy++) {
             this.grid[gy] = {};
+            this.nbhd[gy] = {};
             for (let gx = -halfSize; gx < halfSize; gx++) {
                 this.grid[gy][gx] = [];
+                this.nbhd[gy][gx] = [];
+            }
+        }
+        for (let gy = -halfSize; gy < halfSize; gy++) {
+            for (let gx = -halfSize; gx < halfSize; gx++) {
+                for (let [ox, oy] of Grid.nbhdOffsets) {
+                    if (!this.grid[gy+oy]?.[gx+ox]) {
+                        continue;
+                    }
+                    this.nbhd[gy][gx].push(this.grid[gy+oy][gx+ox]);
+                }
             }
         }
     }
