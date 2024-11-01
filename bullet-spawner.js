@@ -1,5 +1,4 @@
 import {
-    actors,
     bullets,
     position,
     direction,
@@ -29,12 +28,8 @@ export default class BulletSpawner {
             return result;
         }
 
-        actors.bullets[result.id] = this.#scene.physics.add.image(size, size, `bullet_${type}`);
-        actors.bullets[result.id].setName(result.id);
-        actors.bullets[result.id].setCircle(size / 2, 0, 0);
-        this.#scene.physics.add.collider(actors.bullets[result.id], actors.enemies, this.#onEnemyTouch);
-        actors.bullets[result.id].setPosition(x, y);
-        actors.bullets[result.id].setVisible(false);
+        // todo spawn
+
         return result;
     }
 
@@ -44,8 +39,8 @@ export default class BulletSpawner {
             return result;
         }
 
-        actors.bullets[id].destroy();
-        actors.bullets[id] = undefined;
+        // todo despawn
+        
         return result;
     }
 }

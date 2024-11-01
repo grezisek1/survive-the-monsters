@@ -3,9 +3,9 @@ import Soa from "./soa.js";
 export const PHYSICS_FPS = 60;
 export const SCENE_WIDTH = 1920;
 export const SCENE_HEIGHT = 1080;
-export const SPRITE_SIZE = 128;
-export const ENEMIES_COUNT_MAX = 2**8;
-export const BULLETS_COUNT_MAX = 2**8;
+export const PLAYER_SIZE = 128;
+export const ENEMIES_COUNT_MAX = 2**12;
+export const BULLETS_COUNT_MAX = 2**14;
 
 export const playerSpeed = 6;
 export const enemyTypes = [
@@ -104,16 +104,32 @@ export const input = [0, 0];
 export const direction = [1, 0];
 export const position = [0, 0];
 
-export const actors = {
-    enemies: new Array(ENEMIES_COUNT_MAX),
-    bullets: new Array(BULLETS_COUNT_MAX),
+const sprites = {
+    player: new Image(),
+    enemies: [],
+    bullets: [],
 };
+sprites.player.src = "sprites/players/player/image.png";
+for (let type = 0; type < enemyTypes.length; type++) {
+    sprites.enemies[type] = new Image();
+    sprites.enemies[type].src = `sprites/monsters/monster_${type}/image.png`;
+    sprites.enemies[type]._hx = sprites.enemies[type].naturalWidth / 2;
+    sprites.enemies[type]._hy = sprites.enemies[type].naturalHeight / 2;
+}
+for (let i = 0; i < bulletTypes.length; i++) {
+    sprites.bullets[i] = new Image();
+    sprites.bullets[i].src = `sprites/bullets/bullet_${i}/image.png`;
+    sprites.bullets[i]._hx = sprites.bullets[i].naturalWidth / 2;
+    sprites.bullets[i]._hy = sprites.bullets[i].naturalHeight / 2;
+}
+export { sprites };
 
 export const enemies = new Soa({
     state: Uint8Array,
     type: Uint8Array,
     x: Float64Array,
     y: Float64Array,
+    inViewport: Uint8Array,
 }, ENEMIES_COUNT_MAX);
 
 export const bullets = new Soa({
@@ -124,6 +140,7 @@ export const bullets = new Soa({
     vx: Float64Array,
     vy: Float64Array,
     velocityDamp: Float64Array,
+    inViewport: Uint8Array,
 }, ENEMIES_COUNT_MAX);
 
 export const progressMilestones = [
@@ -163,7 +180,7 @@ export const progressMilestonesEnemies = [
     [9],
 ];
 
-export const progressMilestonesSpawnTimes = [
+export const progressMilestonesSpawnIntervals = [
     2,
     1,
     2,

@@ -1,5 +1,4 @@
 import {
-    actors,
     enemies,
 } from "./data.js";
 
@@ -19,15 +18,8 @@ export default class EnemySpawner {
             return result;
         }
 
-        const size = this.#enemyTypes[type].size;
-        const radius = size / 2;
+        // todo add
 
-        actors.enemies[result.id] = this.#scene.physics.add.sprite(0, 0, `monster_${type}`);
-        actors.enemies[result.id].setName(result.id);
-        actors.enemies[result.id].setCircle(radius, 0, 0);
-        this.#scene.physics.add.collider(actors.player, actors.enemies[result.id], this.#onPlayerTouch);
-        actors.enemies[result.id].setPosition(x, y);
-        actors.enemies[result.id].setVisible(false);
         return result;
     }
 
@@ -37,8 +29,8 @@ export default class EnemySpawner {
             return result;
         }
 
-        actors.enemies[id].destroy();
-        actors.enemies[id] = undefined;
+        // todo remove
+
         return result;
     }
 }

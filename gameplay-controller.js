@@ -2,23 +2,16 @@ import {
     PHYSICS_FPS,
     SCENE_WIDTH,
     SCENE_HEIGHT,
-    SPRITE_SIZE,
     ENEMIES_COUNT_MAX,
     BULLETS_COUNT_MAX,
-
-    enemyTypes,
     bulletTypes,
-
-    input,
     direction,
     position,
-
-    actors,
     enemies,
     bullets,
     progressMilestones,
     progressMilestonesEnemies,
-    progressMilestonesSpawnTimes as progressMilestonesSpawnIntervals,
+    progressMilestonesSpawnIntervals,
     progressMilestonesWeaponChance,
 } from "./data.js";
 const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT) / 2;
@@ -64,7 +57,6 @@ export default class GameplayController {
             this.controllerState.bulletSpawnTimeAcc.push(0);
             this.controllerState.weaponSpawnedInMilestone = true;
             alert(`You found ${bulletTypes[typeIndex].name}`)
-            console.log("spawn weapon", this.gameProgressState.milestone, progressMilestonesWeaponChance[this.gameProgressState.milestone])
         }
         
         this.controllerState.enemySpawnTimeAcc += dt;
@@ -168,16 +160,7 @@ export default class GameplayController {
         } catch (_) {}
     }
     #resetState() {
-        for (let id = 0; id < ENEMIES_COUNT_MAX; id++) {
-            actors.enemies[id]?.destroy();
-        }
-        actors.enemies.fill(undefined);
         enemies.reset();
-
-        for (let id = 0; id < BULLETS_COUNT_MAX; id++) {
-            actors.bullets[id]?.destroy();
-        }
-        actors.bullets.fill(undefined);
         bullets.reset();
 
         this.gameProgressState.time = 0;
