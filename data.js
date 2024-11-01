@@ -110,8 +110,8 @@ export const bulletTypes = [
         reloadTime: 3.2,
         despawnTime: 32,
         damage: 12,
-        size: 128,
-        radius: 128/2,
+        size: 96,
+        radius: 96/2,
     },
 ];
 
