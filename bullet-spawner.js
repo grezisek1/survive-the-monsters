@@ -45,6 +45,7 @@ export default class BulletSpawner {
         return result;
     }
     reset() {
+        bullets.reset();
         this.#grid.reset(map.width / 2, map.height / 2);
     }
 }

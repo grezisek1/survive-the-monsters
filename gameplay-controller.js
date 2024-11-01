@@ -191,7 +191,7 @@ export default class GameplayController {
     }
     winGame() {
         this.state.playing = false;
-        this.showAlert(`You won! You survived ${this.state.time>>0} seconds, killed ${this.state.kills} enemies and found ${this.state.weapons.length} weapons. Score: ${this.state.score}. Restart?`);
+        this.showAlert(`<b>You won!</b><br><br>You survived <b>${this.state.time>>0} seconds</b>,<br>killed <b>${this.state.kills} enemies</b> and found <b>${this.state.weapons.length} weapons</b>.<br><br>Score: <b>${this.state.score}</b>.<br><br>Restart?`);
         this.#tryUpdateHighscore();
         this.state.reset();
         this.enemySpawner.reset();
