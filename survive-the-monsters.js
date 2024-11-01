@@ -63,6 +63,10 @@ let inputKeys = {
     down: 0,
     left: 0,
     right: 0,
+    upOld: 0,
+    downOld: 0,
+    leftOld: 0,
+    rightOld: 0,
 };
 addEventListener("keydown", e => {
     switch (e.key) {
@@ -115,8 +119,25 @@ addEventListener("keyup", e => {
     updateInput();
 });
 function updateInput() {
+    debounce: {
+        if (
+            inputKeys.upOld != inputKeys.up
+            || inputKeys.downOld != inputKeys.down
+            || inputKeys.leftOld != inputKeys.left
+            || inputKeys.rightOld != inputKeys.right
+        ) {
+            inputKeys.upOld = inputKeys.up;
+            inputKeys.downOld = inputKeys.down;
+            inputKeys.leftOld = inputKeys.left;
+            inputKeys.rightOld = inputKeys.right;
+            break debounce;
+        }
+
+        return;
+    }
+
     const manX = inputKeys.right - inputKeys.left;
-    const manY = inputKeys.down - inputKeys.up;
+    const manY = inputKeys.up - inputKeys.down;
     const eucSq = manX**2 + manY**2;
     if (eucSq == 0) {
         input[0] = 0;
