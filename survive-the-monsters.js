@@ -21,6 +21,8 @@ import {
     PLAYER_SIZE,
     CELL_SIZE,
     MAP_SIZE,
+    MAP_BORDER_PX,
+    MAP_SIZE_PX,
 } from "./data.js";
 const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
@@ -57,8 +59,7 @@ const bulletSpawner = new BulletSpawner(bulletTypes, (bulletId, enemyId) => {
 const controller = new GameplayController(enemySpawner, bulletSpawner);
 
 function update() {
-    position[0] += input[0] * playerSpeed;
-    position[1] -= input[1] * playerSpeed;
+    updatePlayerPosition();
     enemies.iterate(applyTowardsPlayerMovement);
     bullets.iterate(applyBulletMovement);
     bullets.iterate(updateBulletState);
@@ -66,6 +67,13 @@ function update() {
     bullets.iterate(updatePosition);
 
     controller.update();
+}
+
+function updatePlayerPosition() {
+    const x = position[0] + input[0] * playerSpeed;
+    const y = position[1] + input[1] * playerSpeed;
+    position[0] = Math.max(MAP_BORDER_PX, Math.min(x, MAP_SIZE_PX - MAP_BORDER_PX));
+    position[1] = Math.max(MAP_BORDER_PX, Math.min(y, MAP_SIZE_PX - MAP_BORDER_PX));
 }
 
 let inputKeys = {
