@@ -31,12 +31,10 @@ const sceneCenterX = SCENE_WIDTH / 2;
 const sceneCenterY = SCENE_HEIGHT / 2;
 const dt = 1 / PHYSICS_FPS;
 
-const canvas = document.createElement("canvas");
 canvas.width = SCENE_WIDTH;
 canvas.height = SCENE_HEIGHT;
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
-document.body.appendChild(canvas);
 
 const enemyGrid = new Grid(MAP_SIZE / 2);
 const enemySpawner = new EnemySpawner(enemyTypes, enemyGrid);

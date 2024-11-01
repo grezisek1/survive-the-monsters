@@ -13,6 +13,7 @@ import {
     progressMilestonesEnemies,
     progressMilestonesSpawnIntervals,
     progressMilestonesWeaponChance,
+    gridPos,
 } from "./data.js";
 const spawnRadius = Math.max(SCENE_WIDTH, SCENE_HEIGHT) / 2;
 const dt = 1 / PHYSICS_FPS;
@@ -182,5 +183,7 @@ export default class GameplayController {
         direction[1] = 0;
         position[0] = 0;
         position[1] = 0;
+        gridPos[0] = 0;
+        gridPos[1] = 0;
     }
 }
